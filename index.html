@@ -1,0 +1,2130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FlashLib: Bringing Flash Magic to Classical Machine Learning Operators</title>
+<meta name="description" content="FlashLib is a GPU library for classical machine learning operators on modern hardware, rebuilt for today's ML workloads and emerging agentic AI systems.">
+<meta name="color-scheme" content="light dark">
+<style>
+:root{
+  --bg:#FAF9F6;
+  --surface:#FFFFFF;
+  --surface-2:#F4F2EC;
+  --text:#3D3D3A;
+  --text-strong:#1F1F1D;
+  --text-muted:#6E6D67;
+  --text-faint:#A6A59E;
+  --rule:rgba(115,114,108,0.18);
+  --rule-strong:rgba(115,114,108,0.40);
+  --accent:#185FA5;
+  --link:#185FA5;
+  --link-visited:#534AB7;
+  --code-bg:#F2F0EA;
+  --code-border:rgba(115,114,108,0.18);
+
+  /* per-primitive identity colors, lifted from Figure 1's palette */
+  --c-kmeans:#D85A30;
+  --c-knn:#1D9E75;
+  --c-tsvd:#534AB7;
+  --c-pca:#185FA5;
+  --c-hdbscan:#D4537E;
+  --c-tsne:#C99540;
+  --c-mnb:#2C8EA0;
+  --c-ridge:#6B7A2C;
+  --c-dbscan:#B5722A;
+  --c-umap:#884B91;
+  --c-rf:#2A7757;
+  --c-linreg:#3D5E8C;
+  --c-logreg:#7A3D52;
+
+  --font-serif:"Charter","Iowan Old Style","Source Serif Pro","Source Serif",Georgia,"Times New Roman",serif;
+  --font-sans:-apple-system,BlinkMacSystemFont,"Inter","Segoe UI","Helvetica Neue",Arial,sans-serif;
+  --font-mono:"JetBrains Mono","SF Mono","Fira Code",ui-monospace,Menlo,Consolas,monospace;
+
+  --w:720px;
+}
+
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#1C1B19;
+    --surface:#222120;
+    --surface-2:#2A2926;
+    --text:#E2E1DC;
+    --text-strong:#F4F3EE;
+    --text-muted:#A6A59E;
+    --text-faint:#6E6D66;
+    --rule:rgba(168,167,161,0.20);
+    --rule-strong:rgba(168,167,161,0.40);
+    --accent:#8FB6DC;
+    --link:#8FB6DC;
+    --link-visited:#B0A6E0;
+    --code-bg:#1F1E1C;
+    --code-border:rgba(168,167,161,0.16);
+
+    /* slightly lighter / more saturated for dark backgrounds */
+    --c-kmeans:#E58060;
+    --c-knn:#4BC59A;
+    --c-tsvd:#8E84E0;
+    --c-pca:#7DB3E8;
+    --c-hdbscan:#E68AAA;
+    --c-tsne:#DDB46E;
+    --c-mnb:#5BB3C5;
+    --c-ridge:#A2B056;
+    --c-dbscan:#D89B5C;
+    --c-umap:#B98ABF;
+    --c-rf:#5AB28C;
+    --c-linreg:#7896C4;
+    --c-logreg:#B57588;
+  }
+}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:17px;-webkit-text-size-adjust:100%}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:var(--font-serif);
+  line-height:1.65;
+  font-feature-settings:"kern","liga","clig","onum";
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+}
+
+article{
+  max-width:var(--w);
+  margin:0 auto;
+  padding:4.5rem 1.5rem 5rem;
+}
+@media (max-width:640px){
+  article{padding:2.5rem 1.1rem 3.5rem}
+  html{font-size:16px}
+}
+
+h1,h2,h3,h4{
+  font-family:var(--font-sans);
+  color:var(--text-strong);
+  font-weight:600;
+  letter-spacing:-0.012em;
+  line-height:1.2;
+}
+h1{
+  font-size:2.15rem;
+  letter-spacing:-0.018em;
+  font-weight:700;
+  line-height:1.15;
+  margin-bottom:0.5rem;
+}
+h2{
+  font-size:1.35rem;
+  margin:3.2rem 0 0.9rem;
+  font-weight:600;
+}
+h3{font-size:1.08rem;margin:2rem 0 0.6rem;font-weight:600}
+
+p{font-size:1.04rem;margin:0 0 1.1rem}
+p:last-child{margin-bottom:0}
+
+ul,ol{margin:0 0 1.1rem 1.4rem;padding:0}
+li{margin-bottom:0.4rem;font-size:1.04rem}
+li::marker{color:var(--text-faint)}
+
+em{font-style:italic}
+strong{color:var(--text-strong);font-weight:600}
+
+a{
+  color:var(--link);
+  text-decoration:none;
+  border-bottom:1px solid var(--rule-strong);
+  transition:border-color .15s, color .15s;
+}
+a:hover{border-bottom-color:var(--link);color:var(--link)}
+a:visited{color:var(--link-visited);border-bottom-color:rgba(83,74,183,0.30)}
+
+code{
+  font-family:var(--font-mono);
+  font-size:0.88em;
+  background:var(--code-bg);
+  padding:0.08em 0.34em;
+  border:1px solid var(--code-border);
+  border-radius:4px;
+  color:var(--text-strong);
+}
+
+.byline{
+  font-family:var(--font-sans);
+  font-size:0.86rem;
+  color:var(--text-muted);
+  margin:0 0 1.6rem;
+  padding-bottom:1.4rem;
+  border-bottom:1px solid var(--rule);
+}
+.byline-authors{
+  font-size:0.92rem;
+  color:var(--text-strong);
+  line-height:1.55;
+  margin-bottom:0.4rem;
+  padding-bottom:0;
+  border-bottom:none;
+}
+.byline-authors sup{
+  font-size:0.65em;
+  color:var(--text-muted);
+  margin-left:0.06em;
+  vertical-align:0.5em;
+  font-weight:400;
+}
+.byline-affil sup{
+  font-size:0.78em;
+  margin-right:0.2em;
+  vertical-align:0.4em;
+}
+
+/* Hero stat grid: 2×4 with 7 cards + 1 empty corner.
+   Cells use the negative-margin trick so the empty position has no border. */
+.hero-stats{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  background:var(--surface);
+  border:1px solid var(--rule);
+  border-radius:8px;
+  overflow:hidden;
+  margin:0 0 2.4rem;
+}
+.hero-stats .stat{
+  padding:1rem 1.05rem 0.95rem;
+  border-left:1px solid var(--rule);
+  border-top:1px solid var(--rule);
+  margin:-1px 0 0 -1px;
+  display:flex;
+  flex-direction:column;
+  gap:0.12rem;
+  min-height:106px;
+  background:var(--surface);
+  transition:background .12s;
+}
+.hero-stats .stat:hover{background:var(--surface-2)}
+.hero-stats .num{
+  font-family:var(--font-sans);
+  font-size:1.85rem;
+  font-weight:700;
+  letter-spacing:-0.02em;
+  color:var(--swatch,var(--accent));
+  font-feature-settings:"tnum","lnum";
+  line-height:1.05;
+}
+.hero-stats .num .x{
+  font-size:0.58em;
+  opacity:0.7;
+  font-weight:600;
+  margin-left:0.04em;
+}
+.hero-stats .name{
+  font-family:var(--font-sans);
+  font-size:0.86rem;
+  font-weight:600;
+  color:var(--text-strong);
+  margin-top:0.35rem;
+  letter-spacing:-0.005em;
+}
+.hero-stats .meta{
+  font-family:var(--font-sans);
+  font-size:0.74rem;
+  color:var(--text-muted);
+  margin-top:0.1rem;
+  line-height:1.4;
+}
+@media (max-width:720px){
+  .hero-stats{grid-template-columns:repeat(2,1fr)}
+}
+@media (max-width:380px){
+  .hero-stats{grid-template-columns:1fr}
+}
+
+/* Inline math: keeps a multi-symbol expression on one line and gives variables
+   a faintly mathematical look without pulling in a typesetter. */
+.math{
+  font-family:var(--font-serif);
+  font-feature-settings:"kern","liga","ss01";
+  letter-spacing:0.01em;
+  white-space:nowrap;
+}
+.math em{font-style:italic}
+.eq-block{
+  display:block;
+  margin:0.4rem 0 0.4rem 0;
+  padding:0.55rem 0.9rem;
+  background:var(--surface);
+  border-left:2px solid var(--rule-strong);
+  font-family:var(--font-serif);
+  font-size:1.02rem;
+  color:var(--text-strong);
+  letter-spacing:0.01em;
+  overflow-x:auto;
+}
+.eq-block em{font-style:italic}
+
+/* Code block: rounded card, syntax-highlighted Python. */
+.codeblock{
+  background:var(--code-bg);
+  border:1px solid var(--code-border);
+  border-radius:8px;
+  padding:0.95rem 1.1rem;
+  overflow-x:auto;
+  margin:1rem 0 1.2rem;
+  font-family:var(--font-mono);
+  line-height:1.6;
+  font-size:0.83rem;
+  color:var(--text-strong);
+  -webkit-text-size-adjust:100%;
+  tab-size:4;
+}
+/* Reset the inline-code box treatment for <code> INSIDE a .codeblock.
+   Without this, the inline <code>'s background+border would render around
+   every line of the preformatted text. */
+.codeblock code{
+  background:transparent;
+  border:0;
+  padding:0;
+  border-radius:0;
+  font-size:inherit;
+  color:inherit;
+  display:block;
+}
+/* Syntax tokens. Colors borrow from the primitive palette so the highlighting
+   stays consistent with the rest of the page. */
+.codeblock .c   {color:var(--text-muted); font-style:italic}     /* comment */
+.codeblock .k   {color:var(--c-tsvd);     font-weight:500}        /* keyword: import/from/as/for/in */
+.codeblock .mod {color:var(--c-pca)}                              /* module reference */
+.codeblock .fn  {color:var(--c-tsne);     font-weight:500}        /* function/attribute call */
+.codeblock .kw  {color:var(--c-mnb)}                              /* kwarg name */
+.codeblock .num {color:var(--c-kmeans)}                           /* numeric literal */
+.codeblock .str {color:var(--c-knn)}                              /* string literal */
+.codeblock .b   {color:var(--c-hdbscan); font-weight:500}         /* builtin: None/True/False */
+
+/* "Principle 01 / 04 -- xxx" eyebrow above each principle heading. */
+.eyebrow{
+  font-family:var(--font-sans);
+  font-size:0.7rem;
+  font-weight:600;
+  letter-spacing:0.14em;
+  text-transform:uppercase;
+  color:var(--accent);
+  margin:3.4rem 0 0.45rem;
+  display:flex;
+  align-items:center;
+  gap:0.7rem;
+}
+.eyebrow::after{
+  content:"";
+  display:block;
+  height:1px;
+  flex:1 1 auto;
+  background:var(--rule);
+}
+.eyebrow + h2{margin-top:0.15rem}
+.eyebrow .num{
+  display:inline-block;
+  min-width:1.4em;
+  color:var(--text-faint);
+  font-weight:500;
+  letter-spacing:0.08em;
+}
+
+figure.fig{
+  margin:2.2rem 0;
+}
+figure.fig .figbody{
+  background:var(--surface);
+  border:1px solid var(--rule);
+  border-radius:8px;
+  padding:1.2rem;
+}
+figure.fig img,
+figure.fig svg{display:block;width:100%;height:auto}
+
+/* ── Interactive Figure 1 hover-to-cite tooltip ── */
+figure.fig-latency-chart svg{overflow:visible}
+figure.fig-interactive .figbody.fig-host{position:relative}
+.fig-tip-target{cursor:pointer; outline:none}
+.fig-tip-target circle{transition:r 120ms ease, stroke-width 120ms ease}
+.fig-tip-target:hover circle,
+.fig-tip-target:focus-visible circle,
+.fig-tip-target.is-active circle{filter:brightness(1.08)}
+.fig-tip-target:hover circle[r="5"],
+.fig-tip-target:focus-visible circle[r="5"],
+.fig-tip-target.is-active circle[r="5"]{r:7}
+.fig-tip-target:focus-visible{
+  outline:2px solid var(--accent);
+  outline-offset:2px;
+  border-radius:50%;
+}
+.fig-tip-target.is-active text{font-weight:600}
+.fig-tip{
+  position:absolute;
+  display:none;
+  max-width:360px;
+  min-width:260px;
+  background:var(--surface);
+  border:1px solid var(--rule-strong);
+  border-radius:6px;
+  box-shadow:0 6px 24px rgba(0,0,0,0.14);
+  padding:10px 12px 11px;
+  font-family:var(--font-sans);
+  font-size:0.82rem;
+  color:var(--text-strong);
+  line-height:1.5;
+  z-index:20;
+  pointer-events:none;
+}
+.fig-tip[data-shown="true"]{display:block}
+.fig-tip .tip-era{
+  font-family:var(--font-mono);
+  font-size:0.66rem;
+  letter-spacing:0.05em;
+  text-transform:uppercase;
+  color:var(--text-muted);
+  margin-bottom:3px;
+}
+.fig-tip .tip-title{
+  font-weight:600;
+  font-size:0.9rem;
+  color:var(--text-strong);
+  margin-bottom:5px;
+  line-height:1.3;
+}
+.fig-tip .tip-body{color:var(--text-strong); font-weight:400}
+.fig-tip .tip-body code{
+  font-family:var(--font-mono);
+  font-size:0.78rem;
+  background:var(--surface-2);
+  border:1px solid var(--rule);
+  border-radius:3px;
+  padding:0 4px;
+}
+.fig-tip .tip-refs{
+  margin-top:7px;
+  padding-top:6px;
+  border-top:1px solid var(--rule);
+  font-size:0.74rem;
+  color:var(--text-muted);
+  line-height:1.45;
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+}
+.fig-tip .tip-ref{display:block}
+.fig-tip .tip-ref-prefix{
+  display:inline-block;
+  font-family:var(--font-mono);
+  font-size:0.66rem;
+  letter-spacing:0.04em;
+  text-transform:uppercase;
+  color:var(--text-muted);
+  background:var(--surface-2);
+  border:1px solid var(--rule);
+  border-radius:3px;
+  padding:0 4px;
+  margin-right:5px;
+  vertical-align:0.1em;
+}
+.fig-tip .tip-ref a{color:var(--accent); text-decoration:none}
+.fig-tip .tip-ref a:hover{text-decoration:underline}
+.fig-tip .tip-note{
+  margin-top:6px;
+  font-size:0.72rem;
+  font-style:italic;
+  color:var(--text-muted);
+  line-height:1.4;
+}
+@media (prefers-color-scheme: dark){
+  figure.fig-latency-chart svg text{
+    fill:var(--text) !important;
+  }
+  figure.fig-latency-chart svg .fig-tip-target.is-active text{
+    fill:var(--text-strong) !important;
+  }
+  figure.fig-latency-chart svg line{
+    stroke:var(--rule-strong) !important;
+  }
+  figure.fig-latency-chart svg line[opacity="0.15"]{
+    stroke:var(--rule) !important;
+    opacity:0.42 !important;
+  }
+  figure.fig-latency-chart svg circle[fill="#D85A30"]{fill:var(--c-kmeans) !important}
+  figure.fig-latency-chart svg circle[fill="#1D9E75"]{fill:var(--c-knn) !important}
+  figure.fig-latency-chart svg circle[fill="#534AB7"]{fill:var(--c-tsvd) !important}
+  figure.fig-latency-chart svg circle[fill="#185FA5"]{fill:var(--c-pca) !important}
+  figure.fig-latency-chart svg circle[fill="#D4537E"]{fill:var(--c-hdbscan) !important}
+  figure.fig-latency-chart svg polyline[stroke="#D85A30"]{
+    stroke:var(--c-kmeans) !important;
+    opacity:0.68 !important;
+  }
+  figure.fig-latency-chart svg polyline[stroke="#1D9E75"]{
+    stroke:var(--c-knn) !important;
+    opacity:0.68 !important;
+  }
+  figure.fig-latency-chart svg polyline[stroke="#534AB7"]{
+    stroke:var(--c-tsvd) !important;
+    opacity:0.68 !important;
+  }
+  figure.fig-latency-chart svg polyline[stroke="#185FA5"]{
+    stroke:var(--c-pca) !important;
+    opacity:0.68 !important;
+  }
+  figure.fig-latency-chart svg polyline[stroke="#D4537E"]{
+    stroke:var(--c-hdbscan) !important;
+    opacity:0.68 !important;
+  }
+}
+@media (max-width: 640px){
+  .fig-tip{max-width:88vw; min-width:0; font-size:0.78rem}
+  .fig-tip .tip-title{font-size:0.85rem}
+}
+figure.fig figcaption{
+  margin-top:0.75rem;
+  font-family:var(--font-sans);
+  font-size:0.84rem;
+  color:var(--text-muted);
+  line-height:1.5;
+  text-align:left;
+}
+figure.fig figcaption .label{
+  font-weight:700;
+  color:var(--text-strong);
+  margin-right:0.3rem;
+}
+
+.chart{
+  background:var(--surface);
+  border:1px solid var(--rule);
+  border-radius:8px;
+  padding:1.2rem 1.3rem 1.1rem;
+  margin:1.5rem 0;
+}
+.chart > svg, .chart .agent-view > svg{display:block;width:100%;height:auto}
+.chart-header{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:1rem;
+  margin-bottom:0.9rem;
+  flex-wrap:wrap;
+}
+.chart-header > div:first-child{flex:1 1 14rem; min-width:0}
+@media (max-width:540px){.chart-header{flex-direction:column;gap:0.7rem}}
+.chart-title{
+  font-family:var(--font-sans);
+  font-size:0.98rem;
+  font-weight:600;
+  color:var(--text-strong);
+  line-height:1.35;
+}
+.chart-sub{
+  font-family:var(--font-sans);
+  font-size:0.82rem;
+  color:var(--text-muted);
+  margin-top:0.2rem;
+  line-height:1.45;
+}
+.chart-foot{
+  font-family:var(--font-sans);
+  font-size:0.76rem;
+  color:var(--text-muted);
+  margin-top:0.9rem;
+  padding-top:0.7rem;
+  border-top:1px solid var(--rule);
+}
+
+.toggle{
+  display:inline-flex;
+  border:1px solid var(--rule-strong);
+  border-radius:6px;
+  overflow:hidden;
+  font-family:var(--font-sans);
+  font-size:0.78rem;
+  flex-shrink:0;
+  align-self:flex-start;
+}
+.toggle button{
+  background:var(--surface);
+  border:0;
+  padding:0.38rem 0.85rem;
+  color:var(--text-muted);
+  cursor:pointer;
+  border-right:1px solid var(--rule);
+  font-family:inherit;
+  font-size:inherit;
+  font-weight:500;
+  letter-spacing:0.02em;
+  transition:background .12s, color .12s;
+}
+.toggle button:last-child{border-right:0}
+.toggle button:hover:not(.active){background:var(--surface-2);color:var(--text-strong)}
+.toggle button.active{
+  background:var(--text-strong);
+  color:var(--bg);
+  cursor:default;
+}
+
+.chart[data-view="geomean"] .view-max,
+.chart:not([data-view]) .view-max,
+.chart[data-view="geomean"] .show-max,
+.chart:not([data-view]) .show-max{display:none}
+.chart[data-view="max"] .view-geomean,
+.chart[data-view="max"] .show-geomean{display:none}
+.speedup-summary-label{
+  color:var(--text-strong);
+  font-weight:600;
+  margin-right:0.35rem;
+}
+.speedup-summary-copy{color:var(--text-muted)}
+.toggle-five button{padding:0.34rem 0.64rem;font-size:0.73rem}
+.fig-toolbar{
+  display:flex;
+  justify-content:flex-end;
+  margin:0 0 0.85rem;
+}
+figure.fig-latency-chart svg [data-op]{
+  transition:opacity .34s ease, filter .34s ease;
+}
+
+/* ── agent benchmark (chart 3): toggle between 3 task settings ─────── */
+.chart.agent-chart .agent-view{display:none}
+.chart.agent-chart[data-view="offline_batch"] .agent-view[data-view="offline_batch"],
+.chart.agent-chart[data-view="online_single"] .agent-view[data-view="online_single"],
+.chart.agent-chart[data-view="streaming"]     .agent-view[data-view="streaming"]{display:block}
+.toggle-three button{padding:0.34rem 0.7rem;font-size:0.74rem}
+.chart-actions{display:flex;gap:0.45rem;align-items:flex-start;flex-wrap:wrap;justify-content:flex-end}
+.agent-replay{
+  display:inline-flex;
+  align-items:center;
+  gap:0.28rem;
+  border:1px solid var(--rule-strong);
+  border-radius:6px;
+  background:var(--surface);
+  color:var(--text-muted);
+  padding:0.36rem 0.6rem;
+  font-family:var(--font-sans);
+  font-size:0.72rem;
+  font-weight:500;
+  letter-spacing:0.02em;
+  cursor:pointer;
+  transition:background .12s, color .12s;
+}
+.agent-replay:hover{background:var(--surface-2); color:var(--text-strong)}
+.agent-replay:active{transform:translateY(0.5px)}
+.agent-replay svg{flex-shrink:0;width:13px;height:13px;display:inline-block}
+/* Animation: hidden by default; JS opts each view into the "animated" mode and
+   then toggles "played" to trigger transitions. */
+.agent-view.animated .curve{
+  stroke-dasharray:var(--len, 0);
+  stroke-dashoffset:var(--len, 0);
+}
+.agent-view.animated .marker,
+.agent-view.animated .annot{opacity:0}
+.agent-view.animated.played .curve{
+  stroke-dashoffset:0;
+  transition:stroke-dashoffset var(--draw-dur, 2600ms) linear;
+}
+.agent-view.animated.played .marker{
+  opacity:var(--marker-op, 1);
+  transition:opacity .28s ease-out;
+  transition-delay:var(--m-delay, 0ms);
+}
+.agent-view.animated.played .annot{
+  opacity:1;
+  transition:opacity .35s ease-out;
+  transition-delay:var(--m-delay, 0ms);
+}
+.agent-summary{
+  display:grid;
+  grid-template-columns:repeat(3, 1fr);
+  gap:0.7rem;
+  margin-top:1rem;
+  padding-top:0.95rem;
+  border-top:1px solid var(--rule);
+}
+.agent-card{
+  background:var(--surface-2);
+  border:1px solid var(--rule);
+  border-radius:6px;
+  padding:0.55rem 0.7rem 0.6rem;
+  display:flex;
+  flex-direction:column;
+  gap:0.35rem;
+}
+.agent-card-name{
+  font-family:var(--font-sans);
+  font-size:0.7rem;
+  text-transform:uppercase;
+  letter-spacing:0.06em;
+  color:var(--text-muted);
+}
+.agent-card-nums{
+  display:flex;
+  gap:0.9rem;
+  align-items:baseline;
+}
+.agent-card-nums > div{display:flex;flex-direction:column;line-height:1.1}
+.agent-card-nums .num-fl{
+  font-family:var(--font-sans);
+  font-size:1.15rem;
+  font-weight:700;
+  color:var(--accent);
+  letter-spacing:-0.01em;
+}
+.agent-card-nums .num-de{
+  font-family:var(--font-sans);
+  font-size:1.15rem;
+  font-weight:600;
+  color:var(--text-faint);
+  letter-spacing:-0.01em;
+}
+.agent-card-nums .num-lab{
+  font-family:var(--font-sans);
+  font-size:0.62rem;
+  color:var(--text-muted);
+  text-transform:uppercase;
+  letter-spacing:0.05em;
+  margin-top:0.15rem;
+}
+.agent-card-ratio{
+  font-family:var(--font-sans);
+  font-size:0.78rem;
+  color:var(--text-strong);
+  font-weight:600;
+  margin-top:auto;
+  letter-spacing:-0.005em;
+}
+.agent-card-ratio::before{content:"flashlib / default = "; color:var(--text-muted); font-weight:400}
+.agent-view-sub{
+  padding:0.55rem 0 0.25rem;
+  border-top:1px dashed var(--rule);
+  margin-top:0.7rem;
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-end;
+  gap:1rem;
+  flex-wrap:wrap;
+}
+.agent-view-sub > .agent-view-text{flex:1 1 360px; min-width:0}
+.agent-view-title{
+  font-family:var(--font-sans);
+  font-size:0.92rem;
+  font-weight:600;
+  color:var(--text-strong);
+  line-height:1.3;
+}
+.agent-view-blurb{
+  font-family:var(--font-sans);
+  font-size:0.78rem;
+  color:var(--text-muted);
+  margin-top:0.2rem;
+  line-height:1.45;
+}
+.agent-legend{
+  display:inline-flex;
+  gap:0.95rem;
+  font-family:var(--font-sans);
+  font-size:0.82rem;
+  color:var(--text-strong);
+  white-space:nowrap;
+}
+.agent-legend > span{display:inline-flex; align-items:center; gap:7px; font-weight:600}
+.agent-legend .sw{display:inline-block; width:20px; height:2.5px; border-radius:1px}
+.agent-legend .sw-fl{background:var(--accent)}
+.agent-legend .sw-de{background:var(--text-faint)}
+
+@media (max-width: 640px){
+  .agent-summary{grid-template-columns:1fr; gap:0.5rem}
+  .toggle-three button{padding:0.28rem 0.5rem; font-size:0.68rem}
+}
+
+@media print{
+  body{color:#000;font-size:11pt;line-height:1.45;background:#fff}
+  article{padding:0;max-width:100%}
+  .chart,figure.fig{break-inside:avoid;page-break-inside:avoid}
+  .toggle{display:none}
+  a{color:#000;border-bottom-color:#888}
+}
+
+::selection{background:rgba(24,95,165,0.22);color:var(--text-strong)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+</style>
+</head>
+<body>
+<article>
+
+<h1>FlashLib: Bringing Flash Magic to Classical Machine Learning Operators</h1>
+<p class="byline byline-authors">Shuo&nbsp;Yang<sup>1</sup>, Haocheng&nbsp;Xi<sup>1</sup>, Yilong&nbsp;Zhao<sup>1</sup>, Qiuyang&nbsp;Mang<sup>1</sup>, Zhe&nbsp;Wang<sup>2</sup>, Shanlin&nbsp;Sun<sup>2</sup>, Kurt&nbsp;Keutzer<sup>1</sup>, Joseph&nbsp;E.&nbsp;Gonzalez<sup>1</sup>, Song&nbsp;Han<sup>3</sup>, Chenfeng&nbsp;Xu<sup>1</sup>, Ion&nbsp;Stoica<sup>1</sup></p>
+<p class="byline byline-affil"><sup>1</sup>UC&nbsp;Berkeley &nbsp;&middot;&nbsp; <sup>2</sup>UC&nbsp;Irvine &nbsp;&middot;&nbsp; <sup>3</sup>MIT</p>
+
+<div class="hero-stats" aria-label="Headline speedups over cuML 25.10 on H200">
+  <div class="stat" style="--swatch:var(--c-kmeans)">
+    <span class="num">26<span class="x">&times;</span></span>
+    <span class="name">KMeans</span>
+  </div>
+  <div class="stat" style="--swatch:var(--c-knn)">
+    <span class="num">16<span class="x">&times;</span></span>
+    <span class="name">KNN</span>
+  </div>
+  <div class="stat" style="--swatch:var(--c-tsvd)">
+    <span class="num">88<span class="x">&times;</span></span>
+    <span class="name">TruncatedSVD</span>
+  </div>
+  <div class="stat" style="--swatch:var(--c-pca)">
+    <span class="num">138<span class="x">&times;</span></span>
+    <span class="name">PCA</span>
+  </div>
+  <div class="stat" style="--swatch:var(--c-umap)">
+    <span class="num">5<span class="x">&times;</span></span>
+    <span class="name">UMAP</span>
+  </div>
+  <div class="stat" style="--swatch:var(--c-hdbscan)">
+    <span class="num">34<span class="x">&times;</span></span>
+    <span class="name">HDBSCAN</span>
+  </div>
+  <div class="stat" style="--swatch:var(--c-tsne)">
+    <span class="num">145<span class="x">&times;</span></span>
+    <span class="name">t-SNE (exact)</span>
+  </div>
+  <div class="stat" style="--swatch:var(--c-mnb)">
+    <span class="num">90<span class="x">&times;</span></span>
+    <span class="name">MultinomialNB</span>
+  </div>
+</div>
+
+<p>Introducing <strong>FlashLib</strong> &mdash; a GPU library for classical machine learning operators on modern hardwares, rebuilt for today's ML workloads and emerging agentic AI systems. Here are a few headline results from the first release:</p>
+
+<ul>
+  <li>Significant wins over cuML on Hopper GPUs: up to <strong>26&times;</strong> on KMeans, <strong>16&times;</strong> on KNN, <strong>34&times;</strong> on HDBSCAN, <strong>88&times;</strong> on TruncatedSVD, <strong>138&times;</strong> on PCA, and <strong>145&times;</strong> on exact t-SNE, <strong>90&times;</strong> on MultinomialNB.</li>
+  <li>Flash informative API: Predict runtime, memory footprint, and overhead for any workload in <strong>~5&nbsp;&micro;s on pure CPU</strong>, with no GPU profiling required.</li>
+  <li>Fast cold start, built to scale: FlashLib uses heuristic kernel selection to avoid long autotune loops, and already supports multi-GPU execution for large workloads.</li>
+  <li>Toward optimal hardware utilization: FlashLib drives kernels much closer to the limits of modern GPUs, with Flash-KMeans reaching up to <strong>64% of peak FLOPs</strong> and Flash-KNN reaching up to <strong>85.2% of peak HBM bandwidth</strong> on H200.</li>
+</ul>
+
+<p>The next frontier of AI efficiency is not just faster LLM inference. It is faster intelligence assembly. For the past few years, MLsys work largely followed a model-centric view of intelligence. As LLMs became stronger through better reasoning, larger-scale test-time compute, and more capable inference, the systems community focused on making the transformer core faster: FlashAttention, FlashDecoding, KV-cache management, and LLM serving systems etc.</p>
+
+<p>But the rise of agentic AI is changing the bottleneck. Modern intelligence is increasingly built around the base model through tools, harnesses, retrieval, verification, search, and orchestration. The LLM is no longer merely a standalone reasoner; it becomes a controller over a broader computational system. As a result, the performance bottleneck is no longer confined to transformer inference. It extends to the entire computational substrate surrounding the model. For example, in Agentic AI for Science, LLM agents may generate hypotheses or candidate solutions, but the surrounding loop often depends on search, clustering, nearest-neighbor retrieval, PCA, SVD, and other classical ML operators for verification and feedback. In multimodal generation and physical AI, models must increasingly process, compress, retrieve, and reorganize streaming features on the fly before they enter the model. These examples point to a broader shift: classical ML operators are becoming core primitives around the LLM model. We envision future agentic workflows where clustering, retrieval, dimensionality reduction, verification, and linear algebra are no longer offline utilities, but online primitives in the critical path of intelligence assembly. Figure&nbsp;1 illustrates this shift.</p>
+
+<figure class="fig fig-interactive fig-latency-chart">
+  <div class="figbody fig-host">
+    <div class="fig-toolbar">
+      <div class="toggle toggle-five fig-op-toggle" role="tablist" aria-label="Highlight operator trajectory">
+        <button type="button" data-op-focus="kmeans" aria-pressed="false">KMeans</button>
+        <button type="button" data-op-focus="knn" aria-pressed="false">KNN</button>
+        <button type="button" data-op-focus="tsvd" aria-pressed="false">TruncatedSVD</button>
+        <button type="button" data-op-focus="pca" aria-pressed="false">PCA</button>
+        <button type="button" data-op-focus="hdbscan" aria-pressed="false">HDBSCAN</button>
+      </div>
+    </div>
+    <svg width="100%" viewBox="0 0 690 555" xmlns="http://www.w3.org/2000/svg" role="img"><defs><mask id="imagine-text-gaps-r6m6m4" maskUnits="userSpaceOnUse"><rect x="0" y="0" width="690" height="555" fill="white"/><rect x="6" y="-10" width="57.84375" height="19" fill="black" rx="2"/><rect x="98" y="-10" width="37.6484375" height="19" fill="black" rx="2"/><rect x="166" y="-10" width="89.5" height="19" fill="black" rx="2"/><rect x="276" y="-10" width="33.0390625" height="19" fill="black" rx="2"/><rect x="336" y="-10" width="67.890625" height="19" fill="black" rx="2"/><rect x="34.3828125" y="49.2421875" width="31.6171875" height="19" fill="black" rx="2"/><rect x="27.140625" y="99.2421875" width="38.859375" height="19" fill="black" rx="2"/><rect x="19.890625" y="149.2421875" width="46.109375" height="19" fill="black" rx="2"/><rect x="44.8359375" y="199.2421875" width="21.1640625" height="19" fill="black" rx="2"/><rect x="30.359375" y="289.2421875" width="35.640625" height="19" fill="black" rx="2"/><rect x="39.0078125" y="379.2421875" width="26.9921875" height="19" fill="black" rx="2"/><rect x="63.2890625" y="474" width="33.421875" height="19" fill="black" rx="2"/><rect x="203.30078125" y="474" width="33.3984375" height="19" fill="black" rx="2"/><rect x="343.18359375" y="474" width="33.6328125" height="19" fill="black" rx="2"/><rect x="481.88671875" y="474" width="36.2265625" height="19" fill="black" rx="2"/><rect x="622.21484375" y="474" width="35.5703125" height="19" fill="black" rx="2"/><rect x="243.62890625" y="511" width="222.7421875" height="19" fill="black" rx="2"/><rect x="142" y="343" width="114.9296875" height="19" fill="black" rx="2"/><rect x="107" y="270" width="109.5625" height="19" fill="black" rx="2"/><rect x="82" y="420" width="92.0078125" height="19" fill="black" rx="2"/><rect x="177" y="369" width="89.3515625" height="19" fill="black" rx="2"/><rect x="217" y="394" width="102.796875" height="19" fill="black" rx="2"/><rect x="315" y="226" width="80.4921875" height="19" fill="black" rx="2"/><rect x="362" y="312" width="130.5859375" height="19" fill="black" rx="2"/><rect x="262.796875" y="202" width="95.203125" height="19" fill="black" rx="2"/><rect x="409" y="158" width="83.5859375" height="19" fill="black" rx="2"/><rect x="455" y="252" width="96.9609375" height="19" fill="black" rx="2"/><rect x="351.1171875" y="125" width="146.8828125" height="19" fill="black" rx="2"/><rect x="525" y="186" width="144.28125" height="19" fill="black" rx="2"/><rect x="382.3125" y="86" width="162.6875" height="19" fill="black" rx="2"/><rect x="563.7999877929688" y="132" width="120.21875" height="19" fill="black" rx="2"/><rect x="480.609375" y="62" width="110.390625" height="19" fill="black" rx="2"/></mask></defs>
+<title style="fill:rgb(0, 0, 0);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto">Five classical ML operators migrating from batch latency tier into millisecond serving tier over a decade, with refined labels</title>
+<desc style="fill:rgb(0, 0, 0);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto">Same latency chart as before, with two label refinements: Video generation is now Streaming video generation, and PCA-based KV compression is shortened to PCA-based compression.</desc>
+
+<g transform="translate(96, 28)" style="fill:rgb(0, 0, 0);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto">
+  <circle cx="0" cy="0" r="4" fill="#D85A30" style="fill:rgb(216, 90, 48);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <text x="10" y="4" style="fill:rgb(61, 61, 58);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto">K-means</text>
+  <circle cx="92" cy="0" r="4" fill="#1D9E75" style="fill:rgb(29, 158, 117);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <text x="102" y="4" style="fill:rgb(61, 61, 58);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto">k-NN</text>
+  <circle cx="160" cy="0" r="4" fill="#534AB7" style="fill:rgb(83, 74, 183);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <text x="170" y="4" style="fill:rgb(61, 61, 58);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto">TruncatedSVD</text>
+  <circle cx="270" cy="0" r="4" fill="#185FA5" style="fill:rgb(24, 95, 165);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <text x="280" y="4" style="fill:rgb(61, 61, 58);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto">PCA</text>
+  <circle cx="330" cy="0" r="4" fill="#D4537E" style="fill:rgb(212, 83, 126);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <text x="340" y="4" style="fill:rgb(61, 61, 58);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto">HDBSCAN</text>
+</g>
+
+<line x1="70" y1="60" x2="640" y2="60" stroke="var(--t)" stroke-width="0.3" opacity="0.15" style="fill:rgb(0, 0, 0);stroke:rgb(115, 114, 108);color:rgb(0, 0, 0);stroke-width:0.3px;stroke-linecap:butt;stroke-linejoin:miter;opacity:0.15;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+<line x1="70" y1="110" x2="640" y2="110" stroke="var(--t)" stroke-width="0.3" opacity="0.15" style="fill:rgb(0, 0, 0);stroke:rgb(115, 114, 108);color:rgb(0, 0, 0);stroke-width:0.3px;stroke-linecap:butt;stroke-linejoin:miter;opacity:0.15;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+<line x1="70" y1="160" x2="640" y2="160" stroke="var(--t)" stroke-width="0.3" opacity="0.15" mask="url(#imagine-text-gaps-r6m6m4)" style="fill:rgb(0, 0, 0);stroke:rgb(115, 114, 108);color:rgb(0, 0, 0);stroke-width:0.3px;stroke-linecap:butt;stroke-linejoin:miter;opacity:0.15;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+<line x1="70" y1="210" x2="640" y2="210" stroke="var(--t)" stroke-width="0.3" opacity="0.15" mask="url(#imagine-text-gaps-r6m6m4)" style="fill:rgb(0, 0, 0);stroke:rgb(115, 114, 108);color:rgb(0, 0, 0);stroke-width:0.3px;stroke-linecap:butt;stroke-linejoin:miter;opacity:0.15;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+<line x1="70" y1="300" x2="640" y2="300" stroke="var(--t)" stroke-width="0.3" opacity="0.15" style="fill:rgb(0, 0, 0);stroke:rgb(115, 114, 108);color:rgb(0, 0, 0);stroke-width:0.3px;stroke-linecap:butt;stroke-linejoin:miter;opacity:0.15;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+<line x1="70" y1="390" x2="640" y2="390" stroke="var(--t)" stroke-width="0.3" opacity="0.15" style="fill:rgb(0, 0, 0);stroke:rgb(115, 114, 108);color:rgb(0, 0, 0);stroke-width:0.3px;stroke-linecap:butt;stroke-linejoin:miter;opacity:0.15;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+
+<line x1="70" y1="60" x2="70" y2="470" stroke="var(--t)" stroke-width="0.5" style="fill:rgb(0, 0, 0);stroke:rgb(115, 114, 108);color:rgb(0, 0, 0);stroke-width:0.5px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+<line x1="70" y1="470" x2="640" y2="470" stroke="var(--t)" stroke-width="0.5" style="fill:rgb(0, 0, 0);stroke:rgb(115, 114, 108);color:rgb(0, 0, 0);stroke-width:0.5px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+
+<text x="62" y="60" text-anchor="end" dominant-baseline="middle" style="fill:rgb(61, 61, 58);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:12px;font-weight:400;text-anchor:end;dominant-baseline:middle">1 ms</text>
+<text x="62" y="110" text-anchor="end" dominant-baseline="middle" style="fill:rgb(61, 61, 58);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:12px;font-weight:400;text-anchor:end;dominant-baseline:middle">10 ms</text>
+<text x="62" y="160" text-anchor="end" dominant-baseline="middle" style="fill:rgb(61, 61, 58);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:12px;font-weight:400;text-anchor:end;dominant-baseline:middle">100 ms</text>
+<text x="62" y="210" text-anchor="end" dominant-baseline="middle" style="fill:rgb(61, 61, 58);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:12px;font-weight:400;text-anchor:end;dominant-baseline:middle">1 s</text>
+<text x="62" y="300" text-anchor="end" dominant-baseline="middle" style="fill:rgb(61, 61, 58);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:12px;font-weight:400;text-anchor:end;dominant-baseline:middle">1 min</text>
+<text x="62" y="390" text-anchor="end" dominant-baseline="middle" style="fill:rgb(61, 61, 58);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:12px;font-weight:400;text-anchor:end;dominant-baseline:middle">1 hr</text>
+
+<text x="80" y="488" text-anchor="middle" style="fill:rgb(61, 61, 58);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:12px;font-weight:400;text-anchor:middle;dominant-baseline:auto">2015</text>
+<text x="220" y="488" text-anchor="middle" style="fill:rgb(61, 61, 58);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:12px;font-weight:400;text-anchor:middle;dominant-baseline:auto">2018</text>
+<text x="360" y="488" text-anchor="middle" style="fill:rgb(61, 61, 58);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:12px;font-weight:400;text-anchor:middle;dominant-baseline:auto">2021</text>
+<text x="500" y="488" text-anchor="middle" style="fill:rgb(61, 61, 58);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:12px;font-weight:400;text-anchor:middle;dominant-baseline:auto">2024</text>
+<text x="640" y="488" text-anchor="middle" style="fill:rgb(61, 61, 58);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:12px;font-weight:400;text-anchor:middle;dominant-baseline:auto">2027</text>
+
+<text x="355" y="525" text-anchor="middle" style="fill:rgb(61, 61, 58);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:12px;font-weight:400;text-anchor:middle;dominant-baseline:auto">Year operator entered this latency tier</text>
+
+<polyline points="140,340 453,270 547,110" fill="none" stroke="#D85A30" stroke-width="1.2" stroke-dasharray="4 4" opacity="0.45" mask="url(#imagine-text-gaps-r6m6m4)" style="fill:none;stroke:rgb(216, 90, 48);color:rgb(0, 0, 0);stroke-width:1.2px;stroke-dasharray:4px, 4px;stroke-linecap:butt;stroke-linejoin:miter;opacity:0.45;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+<polyline points="215,390 407,180 593,80" fill="none" stroke="#1D9E75" stroke-width="1.2" stroke-dasharray="4 4" opacity="0.45" mask="url(#imagine-text-gaps-r6m6m4)" style="fill:none;stroke:rgb(29, 158, 117);color:rgb(0, 0, 0);stroke-width:1.2px;stroke-dasharray:4px, 4px;stroke-linecap:butt;stroke-linejoin:miter;opacity:0.45;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+<polyline points="80,415 360,310 523,180" fill="none" stroke="#534AB7" stroke-width="1.2" stroke-dasharray="4 4" opacity="0.45" mask="url(#imagine-text-gaps-r6m6m4)" style="fill:none;stroke:rgb(83, 74, 183);color:rgb(0, 0, 0);stroke-width:1.2px;stroke-dasharray:4px, 4px;stroke-linecap:butt;stroke-linejoin:miter;opacity:0.45;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+<polyline points="105,295 313,250 500,150" fill="none" stroke="#185FA5" stroke-width="1.2" stroke-dasharray="4 4" opacity="0.45" mask="url(#imagine-text-gaps-r6m6m4)" style="fill:none;stroke:rgb(24, 95, 165);color:rgb(0, 0, 0);stroke-width:1.2px;stroke-dasharray:4px, 4px;stroke-linecap:butt;stroke-linejoin:miter;opacity:0.45;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+<polyline points="175,365 360,220 570,130" fill="none" stroke="#D4537E" stroke-width="1.2" stroke-dasharray="4 4" opacity="0.45" mask="url(#imagine-text-gaps-r6m6m4)" style="fill:none;stroke:rgb(212, 83, 126);color:rgb(0, 0, 0);stroke-width:1.2px;stroke-dasharray:4px, 4px;stroke-linecap:butt;stroke-linejoin:miter;opacity:0.45;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+
+<g class="fig-tip-target" data-tip-key="user-segmentation" tabindex="0" role="button" aria-label="User segmentation (K-means)" style="fill:rgb(0, 0, 0);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"><circle cx="140" cy="340" r="5" fill="#D85A30" style="fill:rgb(216, 90, 48);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/><text x="146" y="357" style="fill:rgb(61, 61, 58);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto">User segmentation</text></g>
+<g class="fig-tip-target" data-tip-key="feature-reduction" tabindex="0" role="button" aria-label="Feature reduction (PCA)" style="fill:rgb(0, 0, 0);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"><circle cx="105" cy="295" r="5" fill="#185FA5" style="fill:rgb(24, 95, 165);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/><text x="111" y="284" style="fill:rgb(61, 61, 58);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto">Feature reduction</text></g>
+<g class="fig-tip-target" data-tip-key="topic-modeling" tabindex="0" role="button" aria-label="Topic modelling / LSA (TruncatedSVD)" style="fill:rgb(0, 0, 0);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"><circle cx="80" cy="415" r="5" fill="#534AB7" style="fill:rgb(83, 74, 183);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/><text x="86" y="434" style="fill:rgb(61, 61, 58);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto">Topic modeling</text></g>
+<g class="fig-tip-target" data-tip-key="doc-clustering" tabindex="0" role="button" aria-label="Document clustering (HDBSCAN)" style="fill:rgb(0, 0, 0);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"><circle cx="175" cy="365" r="5" fill="#D4537E" style="fill:rgb(212, 83, 126);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/><text x="181" y="383" style="fill:rgb(61, 61, 58);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto">Doc clustering</text></g>
+<g class="fig-tip-target" data-tip-key="item-item-recsys" tabindex="0" role="button" aria-label="Item-to-item recommendations (k-NN)" style="fill:rgb(0, 0, 0);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"><circle cx="215" cy="390" r="5" fill="#1D9E75" style="fill:rgb(29, 158, 117);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/><text x="221" y="408" style="fill:rgb(61, 61, 58);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto">Item-item recsys</text></g>
+
+<g class="fig-tip-target" data-tip-key="pipeline-pca" tabindex="0" role="button" aria-label="PCA inside an ML pipeline" style="fill:rgb(0, 0, 0);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"><circle cx="313" cy="250" r="5" fill="#185FA5" style="fill:rgb(24, 95, 165);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/><text x="319" y="240" style="fill:rgb(61, 61, 58);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto">Pipeline PCA</text></g>
+<g class="fig-tip-target" data-tip-key="embedding-compress" tabindex="0" role="button" aria-label="Embedding compression (TruncatedSVD)" style="fill:rgb(0, 0, 0);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"><circle cx="360" cy="310" r="5" fill="#534AB7" style="fill:rgb(83, 74, 183);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/><text x="366" y="326" style="fill:rgb(61, 61, 58);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto">Embedding compress</text></g>
+<g class="fig-tip-target" data-tip-key="topic-discovery" tabindex="0" role="button" aria-label="BERTopic (HDBSCAN)" style="fill:rgb(0, 0, 0);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"><circle cx="360" cy="220" r="5" fill="#D4537E" style="fill:rgb(212, 83, 126);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/><text x="354" y="216" text-anchor="end" style="fill:rgb(61, 61, 58);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:12px;font-weight:400;text-anchor:end;dominant-baseline:auto">Topic discovery</text></g>
+<g class="fig-tip-target" data-tip-key="rag-retrieval" tabindex="0" role="button" aria-label="RAG retrieval (k-NN)" style="fill:rgb(0, 0, 0);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"><circle cx="407" cy="180" r="5" fill="#1D9E75" style="fill:rgb(29, 158, 117);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/><text x="413" y="172" style="fill:rgb(61, 61, 58);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto">RAG retrieval</text></g>
+<g class="fig-tip-target" data-tip-key="semantic-cache" tabindex="0" role="button" aria-label="Semantic cache (K-means)" style="fill:rgb(0, 0, 0);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"><circle cx="453" cy="270" r="5" fill="#D85A30" style="fill:rgb(216, 90, 48);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/><text x="459" y="266" style="fill:rgb(61, 61, 58);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto">Semantic cache</text></g>
+
+<g class="fig-tip-target" data-tip-key="pca-compression" tabindex="0" role="button" aria-label="PCA-based compression (PCA)" style="fill:rgb(0, 0, 0);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"><circle cx="500" cy="150" r="5" fill="#185FA5" style="fill:rgb(24, 95, 165);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/><text x="494" y="139" text-anchor="end" style="fill:rgb(61, 61, 58);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:12px;font-weight:400;text-anchor:end;dominant-baseline:auto">PCA-based compression</text></g>
+<g class="fig-tip-target" data-tip-key="svd-compression" tabindex="0" role="button" aria-label="SVD-based compression (TruncatedSVD)" style="fill:rgb(0, 0, 0);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"><circle cx="523" cy="180" r="5" fill="#534AB7" style="fill:rgb(83, 74, 183);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/><text x="529" y="200" style="fill:rgb(61, 61, 58);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto">SVD-based compression</text></g>
+<g class="fig-tip-target" data-tip-key="streaming-video" tabindex="0" role="button" aria-label="Streaming video generation (K-means)" style="fill:rgb(0, 0, 0);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"><circle cx="547" cy="110" r="5" fill="#D85A30" style="fill:rgb(216, 90, 48);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/><text x="541" y="100" text-anchor="end" style="fill:rgb(61, 61, 58);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:12px;font-weight:400;text-anchor:end;dominant-baseline:auto">Streaming video generation</text></g>
+<g class="fig-tip-target" data-tip-key="kv-clustering" tabindex="0" role="button" aria-label="KV-cache clustering (HDBSCAN)" style="fill:rgb(0, 0, 0);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"><circle cx="570" cy="130" r="5" fill="#D4537E" style="fill:rgb(212, 83, 126);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/><text x="567.8" y="146" style="fill:rgb(61, 61, 58);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto">KV cache clustering</text></g>
+<g class="fig-tip-target" data-tip-key="agent-tool-routing" tabindex="0" role="button" aria-label="Agent tool routing (k-NN)" style="fill:rgb(0, 0, 0);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"><circle cx="593" cy="80" r="5" fill="#1D9E75" style="fill:rgb(29, 158, 117);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/><text x="587" y="76" text-anchor="end" style="fill:rgb(61, 61, 58);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:12px;font-weight:400;text-anchor:end;dominant-baseline:auto">Agent tool routing</text></g>
+</svg>
+    <div class="fig-tip" role="tooltip" aria-hidden="true"></div>
+    <script type="application/json" class="fig-tip-data">{"user-segmentation": {"era": "2015 · batch tier", "title": "User segmentation (K-means)", "body": "Marketing teams cluster millions of users by purchase and behaviour features into a handful of personas. A nightly Spark / scikit-learn K-means job is the textbook example; latency budget is the next morning's dashboard.", "refs": [{"text": "Meng et al., MLlib · JMLR 17, 2016", "url": "https://www.jmlr.org/papers/v17/15-237.html"}, {"prefix": "Foundational", "text": "Lloyd, Least-squares quantization in PCM · IEEE TIT 28(2), 1982", "url": null}], "note": null}, "feature-reduction": {"era": "2015 · batch tier", "title": "Feature reduction (PCA)", "body": "Pre-processing step in tabular ML pipelines: project hundreds of correlated features down to a handful of principal components before fitting a regressor or tree model. Runs once per data refresh on a single CPU box.", "refs": [{"text": "Halko, Martinsson, Tropp · SIAM Review 53(2), 2011", "url": "https://arxiv.org/abs/0909.4061"}], "note": null}, "topic-modeling": {"era": "1990–2015 · batch tier", "title": "Topic modelling / LSA (TruncatedSVD)", "body": "Latent Semantic Analysis on a term–document matrix is the textbook offline application of TruncatedSVD. Still the default in gensim's <code>LsiModel</code>; runtime measured in hours on Wikipedia-scale corpora.", "refs": [{"text": "Deerwester et al., Indexing by Latent Semantic Analysis · JASIS 41(6), 1990", "url": null}], "note": null}, "doc-clustering": {"era": "2013 · batch tier", "title": "Document clustering (HDBSCAN)", "body": "Campello, Moulavi &amp; Sander introduced HDBSCAN as a density-based replacement for DBSCAN that picks the cluster count automatically and labels noise. Standard offline pipeline for grouping unstructured documents and log lines.", "refs": [{"text": "Campello, Moulavi, Sander · PAKDD 2013", "url": "https://link.springer.com/chapter/10.1007/978-3-642-37456-2_14"}], "note": null}, "item-item-recsys": {"era": "2001–2003 · batch tier", "title": "Item-to-item recommendations (k-NN)", "body": "For every item, precompute the k nearest neighbours by co-purchase / cosine similarity and serve from a lookup table. The k-NN build runs offline over hours; only the lookup is online.", "refs": [{"text": "Sarwar et al., Item-based collaborative filtering · WWW 2001", "url": "https://dl.acm.org/doi/10.1145/371920.372071"}, {"prefix": "Industrial", "text": "Linden, Smith, York · IEEE Internet Computing 7(1), 2003", "url": "https://www.cs.umd.edu/~samir/498/Amazon-Recommendations.pdf"}], "note": null}, "pipeline-pca": {"era": "~2019 · pipeline tier", "title": "PCA inside an ML pipeline", "body": "By the late 2010s, PCA migrated into the inference pipeline itself: <code>sklearn.Pipeline([PCA(...), Classifier(...)])</code> at request time, Kaggle-era feature engineering, real-time anomaly detection on streaming telemetry.", "refs": [{"prefix": "Implementation", "text": "Pedregosa et al., scikit-learn · JMLR 12, 2011", "url": "https://www.jmlr.org/papers/v12/pedregosa11a.html"}], "note": "General MLOps practice; no single canonical paper."}, "embedding-compress": {"era": "~2019 · pipeline tier", "title": "Embedding compression (TruncatedSVD)", "body": "Once dense 384–1024-d transformer embeddings became the default for search and recommendation, libraries started shipping per-query compression to shrink them for downstream vector indexes.", "refs": [{"prefix": "Closest fit", "text": "Jégou, Douze, Schmid, Product Quantization · IEEE TPAMI 33(1), 2011", "url": "https://hal.inria.fr/inria-00514462v2/document"}], "note": "Product Quantization is the dominant embedding-compression primitive but is K-means-based, not strictly SVD; SVD-on-embeddings has no canonical modern paper."}, "topic-discovery": {"era": "2022 · pipeline tier", "title": "BERTopic (HDBSCAN)", "body": "Grootendorst's <b>BERTopic</b> pipeline is the canonical modern topic-discovery stack: <i>sentence-transformers → UMAP → HDBSCAN → c-TF-IDF</i>. HDBSCAN sits inside the request — the cluster step has to finish in seconds for the dashboard to feel interactive.", "refs": [{"text": "Grootendorst · arXiv 2203.05794, 2022", "url": "https://arxiv.org/abs/2203.05794"}], "note": null}, "rag-retrieval": {"era": "2019–2020 · pipeline tier", "title": "RAG retrieval (k-NN)", "body": "Lewis et&nbsp;al.'s RAG made dense top-k vector search a hard dependency of every modern LLM stack; one RAG turn now spends tens of ms inside k-NN, on top of GPU-accelerated indexes like FAISS.", "refs": [{"text": "Lewis et al., RAG · NeurIPS 2020 (arXiv 2005.11401)", "url": "https://arxiv.org/abs/2005.11401"}, {"prefix": "Infrastructure", "text": "Johnson, Douze, Jégou, FAISS-GPU · IEEE Trans. Big Data 7(3), 2019", "url": "https://arxiv.org/abs/1702.08734"}], "note": null}, "semantic-cache": {"era": "2023 · pipeline tier", "title": "Semantic cache (K-means)", "body": "<b>GPTCache</b> embeds each LLM prompt, runs a top-k similarity search against cached responses, and short-circuits the model when the cluster centroid is close enough. Hit-or-miss in &lt; 100 ms or you've blown the latency saved by skipping inference.", "refs": [{"text": "Bang, GPTCache · EMNLP NLP-OSS 2023", "url": "https://aclanthology.org/2023.nlposs-1.24/"}], "note": "GPTCache uses similarity search, not strict K-means; tighter K-means semantic-cache work is SAFE-CACHE (Scientific Reports, 2026)."}, "pca-compression": {"era": "2024–2025 · serving tier", "title": "PCA-based compression (PCA)", "body": "Project the KV cache (or activations) into a low-rank subspace at inference time, cutting both memory and attention FLOPs. NVIDIA's <b>ESPACE</b> and <b>MatryoshkaKV</b>'s trainable orthogonal projections are the recent canonical entries.", "refs": [{"text": "Sakr &amp; Khailany, ESPACE · NeurIPS 2024 (arXiv 2410.05437)", "url": "https://arxiv.org/abs/2410.05437"}, {"text": "Lin et al., MatryoshkaKV · ICLR 2025 (arXiv 2410.14731)", "url": "https://arxiv.org/abs/2410.14731"}], "note": null}, "svd-compression": {"era": "2024–2025 · serving tier", "title": "SVD-based compression (TruncatedSVD)", "body": "Factor LLM weight matrices into low-rank pieces via truncation-aware SVD; the decomposition runs at load time and the cheaper matmuls happen every token. <b>SVD-LLM</b> and the differentiable <b>Dobi-SVD</b> are the recent leaders on the perplexity-vs-compression frontier.", "refs": [{"text": "Wang et al., Dobi-SVD · ICLR 2025 (arXiv 2502.02723)", "url": "https://arxiv.org/abs/2502.02723"}, {"text": "Wang et al., SVD-LLM · NeurIPS 2024 (arXiv 2403.07378)", "url": "https://arxiv.org/abs/2403.07378"}], "note": null}, "streaming-video": {"era": "2025 · serving tier", "title": "Streaming video generation (K-means)", "body": "Real-time video diffusion lives or dies by per-frame budget. <b>Sparse VideoGen2</b> uses semantic-aware permutation — K-means on token features — to drive sparse attention while keeping quality.", "refs": [{"text": "Yang et al., Sparse VideoGen2 · NeurIPS 2025 (arXiv 2505.18875)", "url": "https://arxiv.org/abs/2505.18875"}], "note": null}, "kv-clustering": {"era": "2025 · serving tier", "title": "KV-cache clustering (HDBSCAN)", "body": "Group KV-cache tokens by the density of their attention patterns, then keep only one representative per cluster. <b>ClusterAttn</b> exploits the intrinsic clustering of attention weights to compress the cache without dropping context.", "refs": [{"text": "Zhang et al., ClusterAttn · ACL 2025", "url": "https://aclanthology.org/2025.acl-long.703"}], "note": "ClusterAttn uses DBSCAN — the same density-based clustering family as HDBSCAN."}, "agent-tool-routing": {"era": "2024 · serving tier", "title": "Agent tool routing (k-NN)", "body": "Every agent turn now starts with a top-k vector retrieval over tool / agent embeddings to pick the right tool from a thousand-tool catalogue. <b>Re-Invoke</b> rewrites the user query first to lift zero-shot retrieval recall.", "refs": [{"text": "Chen et al., Re-Invoke · arXiv 2408.01875, 2024 (Google Cloud AI Research)", "url": "https://arxiv.org/abs/2408.01875"}], "note": null}}</script>
+  </div>
+  <figcaption><span class="label">Figure&nbsp;1.</span> The latency budget for classical ML operators (KMeans, k-NN, TruncatedSVD, PCA, HDBSCAN) has been falling steadily over the past decade, on a log scale. The same primitives that used to run offline at the minute-to-hour tier (user segmentation, topic modeling, batch feature reduction) are now being called inside online serving paths (RAG retrieval, semantic cache, KV-cache clustering, agent tool routing) where the budget is measured in milliseconds. As this trend continues, the systems community needs implementations of these operators that are fast, hardware-efficient, reliable, and numerically faithful enough to sit in the critical path. <em>Hover (or tap) any point to see the specific work it represents.</em></figcaption>
+</figure>
+
+<p>However, the underlying implementations of these classical operators have not kept pace with this shift. Their core design assumptions still come from the pre-FlashAttention, pre-Hopper, pre-agent era, which creates a four-way mismatch. First, many operators carry natural implementations that are unfriendly to GPUs. Second, many libraries ship one static kernel implementation across all workloads and hardware tiers, leaving modern GPU hardware features unexploited. Third, many libraries are unaware of the user's precision needs: they expose no way to declare a precision budget, leaving users unable to ask for the fastest algorithm that meets their tolerance. Fourth, the performance is black box: costly to profile, hard to modify, and impossible to budget without first reading the codebase, which leaves both developers and LLM-based agents in the dark.</p>
+
+<p>FlashLib is our attempt to close these gaps and accelerate this emerging substrate, making it fast enough to sit inside the loop of agentic AI. It transforms classical ML operators from slow, offline utilities into fast, online ML primitives. Moreover, FlashLib exposes flash-informative APIs that reveal the cost, tolerance, and execution behavior of these primitives to higher-level agentic pipelines, thus enabling better scheduling and orchestration. We would also like to point out that while FlashLib is motivated by the emerging needs of LLM-centric and agentic AI systems, we also recognize that classical ML algorithms remain widely used across today's machine learning stacks. Beyond generative AI, operators such as KMeans, KNN, PCA, SVD, t-SNE, and HDBSCAN etc are still core building blocks for recommendation systems, retrieval pipelines, scientific computing, anomaly detection, visualization, and preprocessing for downstream ML models. FlashLib provides a fast, easy-to-use, and adaptive software stack that covers these diverse applications with plug-and-play GPU acceleration.</p>
+
+<p>We built FlashLib around four design principles. First, we reshape the algorithm to fit the hardware while achieving mathematical equivalence. Second, we build kernel variants per operator to fully exploit different workloads on different hardwares using modern hardware features. Third, we let users declare a precision budget and route to the fastest algorithm that meets it. Fourth, we keep the entire library transparent enough that users and LLM agents can easily read, compose, and modify the kernels.</p>
+
+<div class="eyebrow"><span class="num">01 / 04</span><span>Reformulation</span></div>
+<h2>Mathematically Equivalent Reformulation: Rewriting Operators to Be GPU-Friendly</h2>
+
+<p>Many classical ML operators have natural implementations that are unfriendly to GPUs: they materialize large intermediates in HBM, introduce atomic contention, or run reductions along dimensions that don't tile well. FlashLib's first principle is to rewrite these into mathematically equivalent forms that are friendly to modern accelerators. KMeans assign is the clearest example: the natural implementation forms an <span class="math"><em>N</em>&times;<em>K</em></span> distance matrix in HBM and runs an <code>argmin</code> per row, but the streaming-fused version keeps the running local minima in registers and never materializes the matrix. The same pattern recurs across the library: KNN's fused top-K skips the <span class="math">&Vert;<em>x</em>&Vert;<sup>2</sup></span> term in <span class="math">&Vert;<em>x</em>&nbsp;&minus;&nbsp;<em>y</em>&Vert;<sup>2</sup>&nbsp;=&nbsp;&Vert;<em>x</em>&Vert;<sup>2</sup>&nbsp;+&nbsp;&Vert;<em>y</em>&Vert;<sup>2</sup>&nbsp;&minus;&nbsp;2&lang;<em>x</em>,&nbsp;<em>y</em>&rang;</span>, PCA's dual-Gram routing picks the smaller of <span class="math"><em>X</em><sup>&top;</sup><em>X</em> (<em>D</em>&times;<em>D</em>)</span> and <span class="math"><em>X X</em><sup>&top;</sup> (<em>N</em>&times;<em>N</em>)</span>, avoiding the wasted <span class="math">O(max(<em>N</em>,<em>D</em>)<sup>3</sup>)</span> <code>eigh</code> that cuML's fixed <span class="math"><em>D</em>&times;<em>D</em></span> path runs on wide data, MultinomialNB changes atomic scatter for segment-level reduction, and t-SNE's gradient never materializes the <span class="math"><em>N</em>&times;<em>N</em></span> Q matrix.</p>
+
+<div class="eyebrow"><span class="num">02 / 04</span><span>Hardware-Aware Kernels</span></div>
+<h2>Hardware-Aware Implementation: Kernel Variants for Different Hardware and Workloads</h2>
+
+<p>To map these mathematical formulations directly to silicon, FlashLib builds multiple kernel variants that adapt to both the hardware and the workload. Flash-KNN illustrates this approach. First, at the backend layer, we ship a portable Triton implementation for both Ampere and Hopper. For Hopper, an opt-in CuteDSL FA3 backend additionally unlocks modern features like TMA fetching and warp-specialized pipelines. Second, at the kernel layer, the design adapts to the workload. For large queries, the kernel mirrors standard FlashAttention to maximize TensorCore utilization. For small queries against a huge corpus, it mirrors Flash-Decoding: a split-k layout distributes work across the corpus dimension to prevent SM idling. Third, at the heuristic layer, we choose hyperparameters like tile sizes and warp counts based on hardware characteristics such as cache size and register capacity. As a result, even a <span class="math"><em>Q</em>=1</span> query against a 100M-vector corpus holds the kernel at <strong>85.2% of the H200's peak HBM bandwidth</strong>.</p>
+
+<div class="eyebrow"><span class="num">03 / 04</span><span>Tolerance Routing</span></div>
+<h2>Tolerance-Driven Dispatch: Routing to the Fastest Algorithm within a Precision Budget</h2>
+
+<p>FlashLib also exposes the speed-accuracy tradeoff as a user choice. Classical scientific computing often demands high precision in FP32 or even FP64 &mdash; for solving PDEs, certifying numerical methods, or anywhere a small error cascades into a wrong answer. Many AI workloads have no such requirement: a clustering pass over embedding vectors, a top-K retrieval, or a regression on noisy data can absorb a small declared residual for a substantial speedup. FlashLib makes that distinction the user's to draw, through a single per-call argument, <code>tol</code>. At <code>tol=None</code>, reductions stay in exact precision and the call rides the kernel-fusion wins from above. At <code>tol&nbsp;&gt;&nbsp;0</code>, the dispatcher routes through a Pareto frontier of precision emulation (fused variants like <code>3xbf16</code> and Ozaki-II INT8) and algorithm substitution (Halko subspace iteration), picking whichever has the highest throughput within the declared residual.</p>
+
+<pre class="codeblock"><code><span class="c"># GEMM: same call, different tol -> different variant.</span>
+<span class="mod">flashlib</span>.<span class="fn">gemm</span>(A, B)               <span class="c"># exact fp32</span>
+<span class="mod">flashlib</span>.<span class="fn">gemm</span>(A, B, <span class="kw">tol</span>=<span class="num">1e-3</span>)     <span class="c"># bf16</span>
+<span class="mod">flashlib</span>.<span class="fn">gemm</span>(A, B, <span class="kw">tol</span>=<span class="num">1e-5</span>)     <span class="c"># 3xbf16 (cute-fused)</span>
+<span class="mod">flashlib</span>.<span class="fn">gemm</span>(A, B, <span class="kw">tol</span>=<span class="num">1e-7</span>)     <span class="c"># ozaki2_cute(s=8): tighter AND faster</span>
+<span class="mod">flashlib</span>.<span class="fn">gemm</span>(A, B, <span class="kw">tol</span>=<span class="num">1e-12</span>)    <span class="c"># ozaki2_int8(s=14): FP64-grade</span>
+
+<span class="c"># PCA: tol unlocks an algorithm substitution, not just precision.</span>
+<span class="mod">flashlib</span>.<span class="fn">flash_pca</span>(X, <span class="kw">K</span>=<span class="num">32</span>)            <span class="c"># exact eigh on Gram / cov matrix</span>
+<span class="mod">flashlib</span>.<span class="fn">flash_pca</span>(X, <span class="kw">K</span>=<span class="num">32</span>, <span class="kw">tol</span>=<span class="num">1e-4</span>)  <span class="c"># Halko subspace: ~30x faster</span></code></pre>
+
+<div class="eyebrow"><span class="num">04 / 04</span><span>Cost-Predictable API</span></div>
+<h2>Agent-Native API: Transparent Source and Predictable Cost for Users and Agents</h2>
+
+<p>In an era when LLM-based agents increasingly read, call, and modify performance code, the cost of a library is not just its kernel throughput but how legible its cost model and source are. FlashLib is written in Triton and CuteDSL with no opaque binaries &mdash; every kernel from <code>flash_kmeans(...)</code> down to the <code>tl.dot</code> call is editable. And every primitive ships a GPU-free cost-prediction surface: <code>flashlib.info.estimate(...)</code> takes a shape and a tolerance and returns a recursive tree of runtime, FLOPs, HBM bytes, and bound regime in ~5 microseconds on pure CPU, never importing torch, triton, or cutlass. An LLM agent can compose a pipeline of ten primitives, walk that cost tree, and decide whether the budget fits before spending a single FLOP.</p>
+
+<pre class="codeblock"><code><span class="k">import</span> <span class="mod">flashlib.info</span> <span class="k">as</span> <span class="mod">info</span>   <span class="c"># pure stdlib -- no torch/triton/cutlass.</span>
+
+<span class="c"># Predict cost without touching the GPU -- ~5 microseconds on pure CPU.</span>
+est = <span class="mod">info</span>.<span class="fn">estimate</span>(<span class="str">"pca"</span>, <span class="kw">shape</span>=(<span class="num">1_000_000</span>, <span class="num">512</span>), <span class="kw">params</span>={<span class="str">"K"</span>: <span class="num">32</span>})
+
+<span class="fn">print</span>(est.<span class="fn">summary_line</span>())
+<span class="c"># pca   4.21 ms  bound=memory  398 GB/s  (10% peak)  [calibrated]</span>
+
+est.<span class="fn">print_tree</span>()              <span class="c"># walk the recursive call-stack tree</span>
+<span class="c"># pca           4.21 ms   3.20 GB   memory    398 GB/s</span>
+<span class="c"># &#9500;&#9472;&#9472; cov_gemm  3.10 ms   2.20 GB   memory    420 GB/s</span>
+<span class="c"># &#9492;&#9472;&#9472; eigh      1.11 ms   0.04 GB   compute    38 TF</span>
+
+<span class="c"># Pareto-optimal GEMM variants at a tol budget:</span>
+<span class="k">for</span> v <span class="k">in</span> <span class="mod">info</span>.<span class="fn">pareto</span>(<span class="str">"gemm"</span>, <span class="kw">shape</span>=(<span class="num">4096</span>, <span class="num">4096</span>, <span class="num">4096</span>), <span class="kw">tol</span>=<span class="num">1e-5</span>):
+    <span class="fn">print</span>(v)
+<span class="c"># Variant('3xbf16'      :   0.7 ms  residual~3e-5)</span>
+<span class="c"># Variant('ozaki2_cute' :   1.7 ms  residual~3e-7)</span>
+<span class="c"># Variant('ozaki2_int8' :   4.0 ms  residual~1e-15)</span></code></pre>
+
+<h2>Benchmarks</h2>
+
+<p>All results below are measured on a single NVIDIA H200 (SM90, 150&nbsp;GB HBM3e) with <code>CUDA&nbsp;13.0</code>, driver <code>580.126</code>, <code>PyTorch&nbsp;2.11</code>, <code>Triton&nbsp;3.6</code>, against <code>cuML&nbsp;25.10</code>. Every cell is the median over 5 iterations with the first call discarded for JIT amortization; inputs are GPU-resident on both sides; matched-algorithm rows (same <code>algorithm</code>, <code>method</code>, <code>svd_solver</code>) are paired with reduced-precision and algorithmic-shortcut rows so the comparison is fair at every shape.</p>
+
+<h3>1. Breadth: speedup over cuML across 13 primitives</h3>
+
+<p>The first benchmark is a broad sweep: 13 primitives &times; 198 (shape, dtype, hyperparameter) cells, all run against <code>cuml&nbsp;25.10</code> with matched algorithms on the same H200. The bar chart below collapses each primitive's 12&ndash;40 cells into a single bar &mdash; <strong>Geomean</strong> shows the geometric-mean speedup across all of that primitive's cells, and <strong>Max</strong> shows the per-primitive ceiling on the most favourable cell. FlashLib is at least as fast as cuML on <strong>197 / 198</strong> cells; <strong>126</strong> cells cross 5&times;, and <strong>12</strong> cross 50&times;.</p>
+
+<!-- ───── Chart 1: per-primitive speedup with geomean/max toggle ───── -->
+<div class="chart speedup-chart" data-view="geomean">
+  <div class="chart-header">
+    <div>
+      <div class="chart-title">Speedup over cuML 25.10, per primitive</div>
+      <div class="chart-sub">
+        <span class="show-geomean">Geometric mean across 198 workload cells &middot; log-scale x-axis.</span>
+        <span class="show-max">Maximum win across the same 198 cells &middot; log-scale x-axis.</span>
+      </div>
+    </div>
+    <div class="chart-actions">
+      <div class="toggle" role="tablist" aria-label="Chart view">
+        <button type="button" data-view="geomean" class="active" aria-pressed="true">Geomean</button>
+        <button type="button" data-view="max" aria-pressed="false">Max</button>
+      </div>
+      <div class="toggle toggle-five speedup-focus-toggle" role="tablist" aria-label="Primitive spotlight">
+        <button type="button" data-focus="kmeans" aria-pressed="false">KMeans</button>
+        <button type="button" data-focus="knn" aria-pressed="false">KNN</button>
+        <button type="button" data-focus="tsvd" aria-pressed="false">TruncatedSVD</button>
+        <button type="button" data-focus="pca" aria-pressed="false">PCA</button>
+        <button type="button" data-focus="hdbscan" aria-pressed="false">HDBSCAN</button>
+      </div>
+    </div>
+  </div>
+  <svg class="speedup-svg" viewBox="0 0 720 440" role="img" aria-label="Animated bar chart of per-primitive speedup over cuML 25.10"></svg>
+  <div class="chart-foot">
+    <span class="speedup-summary-label">Spotlight</span>
+    <span class="speedup-summary-copy">Click one of the five primitive buttons to pin it to the top, then switch between geomean and max to watch the ordering and bar lengths move smoothly.</span>
+  </div>
+</div>
+
+<h3>2. Depth: precision &times; runtime trade-off inside one primitive (GEMM)</h3>
+
+<p>The second benchmark zooms into a single primitive, GEMM at 4096&sup3; on H200, to show what tolerance routing looks like in practice. FlashLib ships ~10 GEMM variants in <code>flashlib.linalg.gemm</code> &mdash; bf16, fp16, tf32, fused multi-pass (<code>3xbf16</code>, <code>fp16_x3_kahan</code>), and the Ozaki-II INT8 family (<code>ozaki2_cute</code>, <code>ozaki2_int8</code>) &mdash; all behind the single <code>tol</code>-routed dispatcher from Principle&nbsp;03. The scatter below plots each variant on RMS relative error (vs an FP64 reference) against per-call runtime. The dashed curve is the <em>Pareto frontier</em>: variants below it dominate the rest. The interesting point is <code>ozaki2_cute(s=8)</code>: it sits below <em>and</em> to the left of <code>fp32</code>, meaning it is simultaneously tighter and ~2&times; faster than the native fp32 path on this shape.</p>
+
+<!-- ───── Chart 2: GEMM precision/throughput Pareto frontier ───── -->
+<div class="chart">
+  <div class="chart-header">
+    <div>
+      <div class="chart-title">GEMM precision vs runtime, 4096<sup>3</sup> on H200</div>
+      <div class="chart-sub">Each point is one variant. Lower is better on both axes. The dashed accent curve is the Pareto frontier &mdash; everything to its upper-right is dominated.</div>
+    </div>
+  </div>
+
+  <svg viewBox="0 0 720 420" role="img" aria-label="Scatter plot of GEMM variants on log-log axes of precision vs runtime">
+    <!-- Plot area: x = 65 → 645 (580 wide), y = 25 → 320 (295 tall)
+         x: runtime ms, log range 0.2 → 3.0, scale 580/log10(15) = 493.2 per log unit
+         y: RMS rel-err, log range 1e-7 → 1e-2, scale 295/5 = 59 per log unit
+         x(t) = 65 + (log10(t) + 0.699) * 493.2
+         y(e) = 25 + (-2 - log10(e)) * 59
+
+         bf16          (0.285, 3e-3) -> (141, 56)
+         fp16          (0.293, 4e-4) -> (147, 108)
+         tf32          (0.358, 3e-4) -> (190, 115)
+         3xbf16        (0.696, 3e-5) -> (332, 174)
+         fp16_x3_kahan (1.18,  4e-7) -> (445, 285)
+         ozaki2_cute   (1.71,  1e-7) -> (525, 320)
+         fp32          (2.71,  3e-7) -> (623, 292) -->
+
+    <defs>
+      <!-- gentle radial highlight behind the punchline point -->
+      <radialGradient id="halo-ozaki" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="var(--accent)" stop-opacity="0.55"/>
+        <stop offset="60%" stop-color="var(--accent)" stop-opacity="0.18"/>
+        <stop offset="100%" stop-color="var(--accent)" stop-opacity="0"/>
+      </radialGradient>
+      <!-- very faint background tint for the "dominated zone" (above the frontier) -->
+      <linearGradient id="dom-tint" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="var(--text-faint)" stop-opacity="0.10"/>
+        <stop offset="100%" stop-color="var(--text-faint)" stop-opacity="0"/>
+      </linearGradient>
+      <!-- arrow head for the "fp32 -> ozaki2_cute" callout -->
+      <marker id="arrow-accent" viewBox="0 0 10 10" refX="9" refY="5"
+              markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--accent)" opacity="0.7"/>
+      </marker>
+    </defs>
+
+    <!-- dominated zone: from top-left corner, along the frontier, to top-right -->
+    <path d="M65,25 L65,55 L141,56 L147,108 L190,115 L332,174 L445,285 L525,320 L645,320 L645,25 Z"
+          fill="url(#dom-tint)" opacity="0.9"/>
+
+    <!-- frame -->
+    <line x1="65" y1="25" x2="65" y2="320" stroke="var(--rule-strong)" stroke-width="1"/>
+    <line x1="65" y1="320" x2="645" y2="320" stroke="var(--rule-strong)" stroke-width="1"/>
+
+    <!-- vertical gridlines: 0.5, 1, 2, 3 ms -->
+    <g stroke="var(--rule)" stroke-width="1" stroke-dasharray="2 3">
+      <line x1="266.7" y1="25" x2="266.7" y2="320"/>
+      <line x1="410.8" y1="25" x2="410.8" y2="320"/>
+      <line x1="555.0" y1="25" x2="555.0" y2="320"/>
+      <line x1="645.0" y1="25" x2="645.0" y2="320"/>
+    </g>
+    <!-- horizontal gridlines: 1e-3, 1e-4, 1e-5, 1e-6 -->
+    <g stroke="var(--rule)" stroke-width="1" stroke-dasharray="2 3">
+      <line x1="65" y1="84" x2="645" y2="84"/>
+      <line x1="65" y1="143" x2="645" y2="143"/>
+      <line x1="65" y1="202" x2="645" y2="202"/>
+      <line x1="65" y1="261" x2="645" y2="261"/>
+    </g>
+
+    <!-- y-axis tick labels -->
+    <g font-family="var(--font-sans)" font-size="11" fill="var(--text-muted)" text-anchor="end">
+      <text x="58" y="29">10⁻²</text>
+      <text x="58" y="88">10⁻³</text>
+      <text x="58" y="147">10⁻⁴</text>
+      <text x="58" y="206">10⁻⁵</text>
+      <text x="58" y="265">10⁻⁶</text>
+      <text x="58" y="324">10⁻⁷</text>
+    </g>
+    <!-- x-axis tick labels -->
+    <g font-family="var(--font-sans)" font-size="11" fill="var(--text-muted)" text-anchor="middle">
+      <text x="65" y="338">0.2</text>
+      <text x="266.7" y="338">0.5</text>
+      <text x="410.8" y="338">1.0</text>
+      <text x="555.0" y="338">2.0</text>
+      <text x="645.0" y="338">3.0</text>
+      <text x="355" y="392" font-size="11.5">Runtime per GEMM at 4096³ (ms, log)</text>
+    </g>
+    <!-- y-axis title (rotated) -->
+    <text x="-172" y="20" transform="rotate(-90)" font-family="var(--font-sans)" font-size="11.5" fill="var(--text-muted)" text-anchor="middle">RMS relative error vs FP64 reference (log)</text>
+
+    <!-- subtle "dominated" annotation in the upper-right region -->
+    <text x="540" y="60" font-family="var(--font-sans)" font-size="10.5" fill="var(--text-faint)"
+          font-style="italic" text-anchor="middle">dominated&nbsp;region&nbsp;&uarr;</text>
+
+    <!-- Pareto frontier polyline (excludes fp32 which is dominated). Accent-colored. -->
+    <polyline points="141,56 147,108 190,115 332,174 445,285 525,320"
+              fill="none" stroke="var(--accent)" stroke-width="1.6"
+              stroke-dasharray="5 4" stroke-linecap="round" opacity="0.55"/>
+
+    <!-- Frontier points: each variant gets its own identity color, ringed with the
+         surface color to "punch out" the point against the background. -->
+    <g stroke="var(--surface)" stroke-width="2">
+      <circle cx="141" cy="56"  r="6" fill="var(--c-kmeans)"/>          <!-- bf16   -->
+      <circle cx="147" cy="108" r="6" fill="var(--c-tsne)"/>            <!-- fp16   -->
+      <circle cx="190" cy="115" r="6" fill="var(--c-hdbscan)"/>         <!-- tf32   -->
+      <circle cx="332" cy="174" r="6" fill="var(--c-mnb)"/>             <!-- 3xbf16 -->
+      <circle cx="445" cy="285" r="6" fill="var(--c-knn)"/>             <!-- fp16_x3_kahan -->
+    </g>
+
+    <!-- Punchline: ozaki2_cute with a radial halo and a slightly bigger point. -->
+    <circle cx="525" cy="320" r="22" fill="url(#halo-ozaki)"/>
+    <circle cx="525" cy="320" r="7.5" fill="var(--accent)" stroke="var(--surface)" stroke-width="2"/>
+
+    <!-- Dominated point: fp32 - hollow ring, faded -->
+    <circle cx="623" cy="292" r="6" fill="var(--surface)" stroke="var(--text-faint)"
+            stroke-width="1.4" stroke-dasharray="3 2"/>
+    <!-- small × overlay to reinforce "dominated" -->
+    <g stroke="var(--text-faint)" stroke-width="1.2" opacity="0.7">
+      <line x1="619.5" y1="288.5" x2="626.5" y2="295.5"/>
+      <line x1="626.5" y1="288.5" x2="619.5" y2="295.5"/>
+    </g>
+
+    <!-- Variant labels: each in its own color, matching the point. -->
+    <g font-family="var(--font-mono)" font-size="11" font-weight="500">
+      <text x="151" y="49"                     fill="var(--c-kmeans)">bf16</text>
+      <text x="140" y="111" text-anchor="end"  fill="var(--c-tsne)">fp16</text>
+      <text x="200" y="130"                    fill="var(--c-hdbscan)">tf32</text>
+      <text x="344" y="171"                    fill="var(--c-mnb)">3xbf16</text>
+      <text x="438" y="271" text-anchor="end"  fill="var(--c-knn)">fp16_x3_kahan</text>
+    </g>
+
+    <!-- Punchline callout for ozaki2_cute: label above + guide line down to the halo. -->
+    <line x1="525" y1="258" x2="525" y2="305" stroke="var(--accent)"
+          stroke-width="0.9" stroke-dasharray="2 3" opacity="0.55"/>
+    <text x="525" y="248" text-anchor="middle"
+          font-family="var(--font-mono)" font-size="11.5" font-weight="600"
+          fill="var(--accent)">ozaki2_cute (s=8)</text>
+    <text x="525" y="232" text-anchor="middle"
+          font-family="var(--font-sans)" font-size="10.5" font-style="italic"
+          fill="var(--accent)" opacity="0.85">tighter AND faster than fp32</text>
+
+    <!-- fp32 label (faded) -->
+    <text x="630" y="289" font-family="var(--font-mono)" font-size="11"
+          font-weight="500" fill="var(--text-faint)">fp32</text>
+    <text x="630" y="302" font-family="var(--font-sans)" font-size="10"
+          font-style="italic" fill="var(--text-faint)">native&nbsp;&middot;&nbsp;dominated</text>
+
+    <!-- "fp32 -> ozaki2_cute" callout arrow: curved line from fp32 down to ozaki2_cute. -->
+    <path d="M 617,300 Q 575,345 538,328"
+          fill="none" stroke="var(--accent)" stroke-width="1"
+          stroke-linecap="round" opacity="0.5"
+          marker-end="url(#arrow-accent)"/>
+    <text x="578" y="362" text-anchor="middle"
+          font-family="var(--font-sans)" font-size="10" font-style="italic"
+          fill="var(--accent)" opacity="0.8">~2&times; faster, ~3&times; tighter</text>
+  </svg>
+</div>
+
+<h3>3. Agent loops: Does FlashLib accelerate the agent loop?</h3>
+
+<p>Our third benchmark returns to the core motivation of FlashLib: many agentic workflows are bottlenecked not only by LLM rollout, but also by auxiliary operators such as retrieval, clustering, vector search, and numerical routines. We therefore evaluate FlashLib in a meta setting: whether giving a coding agent access to FlashLib helps it ship a faster end-to-end system.</p>
+
+<p>Concretely, we task Claude Code Opus 4.7 with building a GPU vector-search backend, based on the GPU port of <a href="https://github.com/KCORES/vector-db-bench">KCORES/vector-db-bench</a>, under a 1M-token budget. The goal is to maximize QPS subject to a strict recall constraint of at least 0.999 on SIFT-1M. We evaluate the resulting system across three workloads: offline batch search, online single-query search, and streaming search. We run the same task twice, changing only whether the agent has access to FlashLib.</p>
+
+<div class="chart agent-chart" data-view="offline_batch">
+  <div class="chart-header">
+    <div>
+      <div class="chart-title">QPS over time, w/ vs w/o flashlib in the prompt</div>
+      <div class="chart-sub">Both runs are Claude Code Opus 4.7 against the same vector-search task at recall ≥ 0.999, capped at 1M tokens. The trajectory plays as if you were watching the agent live; squares mark a clean exit, crosses mark a budget timeout.</div>
+    </div>
+    <div class="chart-actions">
+      <div class="toggle toggle-three" role="tablist" aria-label="Setting"><button type="button" data-view="offline_batch" class=" active" aria-pressed="true">Offline batch</button> <button type="button" data-view="online_single" class="" aria-pressed="false">Online single</button> <button type="button" data-view="streaming" class="" aria-pressed="false">Streaming</button></div>
+      <button type="button" class="agent-replay" aria-label="Replay animation" title="Replay animation"><svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path d="M8 1.5a6.5 6.5 0 1 0 5.5 10" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M13.5 1.5v4h-4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Replay</span></button>
+    </div>
+  </div>
+<div class="agent-view" data-view="offline_batch">
+  <div class="agent-view-sub">
+    <div class="agent-view-text">
+      <div class="agent-view-title">Offline batch (10k queries / call)</div>
+      <div class="agent-view-blurb">Bulk-vector queries with no latency constraint. The defining benchmark for fused matmul+top-k.</div>
+    </div>
+    <div class="agent-legend" aria-label="Legend">
+      <span><span class="sw sw-fl"></span>w/ flashlib</span>
+      <span><span class="sw sw-de"></span>default</span>
+    </div>
+  </div>
+<svg viewBox="0 0 720 400" role="img" aria-label="QPS over time for tier1.offline_batch – Claude Opus 4.7, w/ vs w/o flashlib">
+<line x1="78" y1="50" x2="78" y2="300" stroke="var(--rule-strong)" stroke-width="1"/>
+<line x1="78" y1="300" x2="660" y2="300" stroke="var(--rule-strong)" stroke-width="1"/>
+<g stroke="var(--rule)" stroke-width="1" stroke-dasharray="2 3">
+<line x1="78" y1="263.2" x2="660" y2="263.2"/>
+<line x1="78" y1="226.5" x2="660" y2="226.5"/>
+<line x1="78" y1="189.7" x2="660" y2="189.7"/>
+<line x1="78" y1="152.9" x2="660" y2="152.9"/>
+<line x1="78" y1="116.2" x2="660" y2="116.2"/>
+<line x1="78" y1="79.4" x2="660" y2="79.4"/>
+</g>
+<g stroke="var(--rule)" stroke-width="1" stroke-dasharray="2 3">
+<line x1="220.0" y1="50" x2="220.0" y2="300"/>
+<line x1="361.9" y1="50" x2="361.9" y2="300"/>
+<line x1="503.9" y1="50" x2="503.9" y2="300"/>
+<line x1="645.8" y1="50" x2="645.8" y2="300"/>
+</g>
+<g font-family="var(--font-sans)" font-size="12" fill="var(--text-muted)" text-anchor="end">
+<text x="72" y="304.0">0</text>
+<text x="72" y="267.2">50k</text>
+<text x="72" y="230.5">100k</text>
+<text x="72" y="193.7">150k</text>
+<text x="72" y="156.9">200k</text>
+<text x="72" y="120.2">250k</text>
+<text x="72" y="83.4">300k</text>
+</g>
+<text x="-175.0" y="18" transform="rotate(-90)" font-family="var(--font-sans)" font-size="13" fill="var(--text-muted)" text-anchor="middle">QPS at recall ≥ 0.999</text>
+<g font-family="var(--font-sans)" font-size="12" fill="var(--text-muted)" text-anchor="middle">
+<text x="78.0" y="318">0s</text>
+<text x="220.0" y="318">1000s</text>
+<text x="361.9" y="318">2000s</text>
+<text x="503.9" y="318">3000s</text>
+<text x="645.8" y="318">4000s</text>
+<text x="369.0" y="338" font-size="13">Elapsed time (Claude Opus 4.7, 1M-token budget)</text>
+</g>
+<polyline class="curve" data-variant="default" points="78.0,300.0 110.4,300.0 110.4,282.8 150.1,282.8 150.1,273.1 293.2,273.1 293.2,271.8 323.5,271.8 323.5,265.0 324.6,265.0 324.6,263.6 327.1,263.6 327.1,263.6 327.1,263.6 327.1,263.4 336.1,263.4 336.1,263.4 642.2,263.4 642.2,263.4" fill="none" stroke="var(--text-faint)" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" opacity="0.55" style="--draw-dur:2520ms"/>
+<circle class="marker" data-time="228" cx="110.4" cy="282.8" r="4" fill="var(--text-faint)" stroke="var(--surface)" stroke-width="1.5" opacity="0.7" style="--m-delay:136ms"/>
+<circle class="marker" data-time="508" cx="150.1" cy="273.1" r="4" fill="var(--text-faint)" stroke="var(--surface)" stroke-width="1.5" opacity="0.7" style="--m-delay:374ms"/>
+<circle class="marker" data-time="1515" cx="293.2" cy="271.8" r="4" fill="var(--text-faint)" stroke="var(--surface)" stroke-width="1.5" opacity="0.7" style="--m-delay:1015ms"/>
+<circle class="marker" data-time="1729" cx="323.5" cy="265.0" r="4" fill="var(--text-faint)" stroke="var(--surface)" stroke-width="1.5" opacity="0.7" style="--m-delay:1147ms"/>
+<circle class="marker" data-time="1737" cx="324.6" cy="263.6" r="4" fill="var(--text-faint)" stroke="var(--surface)" stroke-width="1.5" opacity="0.7" style="--m-delay:1181ms"/>
+<circle class="marker" data-time="1754" cx="327.1" cy="263.6" r="4" fill="var(--text-faint)" stroke="var(--surface)" stroke-width="1.5" opacity="0.7" style="--m-delay:1197ms"/>
+<circle class="marker" data-time="1754" cx="327.1" cy="263.4" r="4" fill="var(--text-faint)" stroke="var(--surface)" stroke-width="1.5" opacity="0.7" style="--m-delay:1197ms"/>
+<circle class="marker" data-time="1818" cx="336.1" cy="263.4" r="4" fill="var(--text-faint)" stroke="var(--surface)" stroke-width="1.5" opacity="0.7" style="--m-delay:1235ms"/>
+<g class="marker" data-time="3974" transform="translate(642.2,263.4)" style="--m-delay:2520ms"><line x1="-4" y1="-4" x2="4" y2="4" stroke="var(--text-faint)" stroke-width="1.6" opacity="0.9"/><line x1="-4" y1="4" x2="4" y2="-4" stroke="var(--text-faint)" stroke-width="1.6" opacity="0.9"/></g>
+<polyline class="curve" data-variant="flashlib" points="78.0,300.0 102.0,300.0 102.0,285.5 105.8,285.5 105.8,180.6 133.5,180.6 133.5,161.4 342.0,161.4 342.0,106.7 355.1,106.7 355.1,75.9 388.8,75.9 388.8,73.4 418.7,73.4 418.7,73.2 484.0,73.2 484.0,71.8 492.7,71.8 492.7,71.8 499.2,71.8 499.2,71.8" fill="none" stroke="var(--accent)" stroke-width="2.0" stroke-linejoin="round" stroke-linecap="round" opacity="1.0" style="--draw-dur:1881ms"/>
+<circle class="marker" data-time="168" cx="102.0" cy="285.5" r="4" fill="var(--accent)" stroke="var(--surface)" stroke-width="1.5" opacity="1.0" style="--m-delay:69ms"/>
+<circle class="marker" data-time="195" cx="105.8" cy="180.6" r="4" fill="var(--accent)" stroke="var(--surface)" stroke-width="1.5" opacity="1.0" style="--m-delay:122ms"/>
+<circle class="marker" data-time="390" cx="133.5" cy="161.4" r="4" fill="var(--accent)" stroke="var(--surface)" stroke-width="1.5" opacity="1.0" style="--m-delay:506ms"/>
+<circle class="marker" data-time="1859" cx="342.0" cy="106.7" r="4" fill="var(--accent)" stroke="var(--surface)" stroke-width="1.5" opacity="1.0" style="--m-delay:1166ms"/>
+<circle class="marker" data-time="1952" cx="355.1" cy="75.9" r="4" fill="var(--accent)" stroke="var(--surface)" stroke-width="1.5" opacity="1.0" style="--m-delay:1362ms"/>
+<circle class="marker" data-time="2189" cx="388.8" cy="73.4" r="4" fill="var(--accent)" stroke="var(--surface)" stroke-width="1.5" opacity="1.0" style="--m-delay:1549ms"/>
+<circle class="marker" data-time="2400" cx="418.7" cy="73.2" r="4" fill="var(--accent)" stroke="var(--surface)" stroke-width="1.5" opacity="1.0" style="--m-delay:1643ms"/>
+<circle class="marker" data-time="2860" cx="484.0" cy="71.8" r="4" fill="var(--accent)" stroke="var(--surface)" stroke-width="1.5" opacity="1.0" style="--m-delay:1833ms"/>
+<circle class="marker" data-time="2921" cx="492.7" cy="71.8" r="4" fill="var(--accent)" stroke="var(--surface)" stroke-width="1.5" opacity="1.0" style="--m-delay:1862ms"/>
+<g class="marker" data-time="2966" transform="translate(499.2,71.8)" style="--m-delay:1881ms"><polygon points="-3.5,-3.5 3.5,-3.5 3.5,3.5 -3.5,3.5" fill="var(--accent)" stroke="var(--surface)" stroke-width="1.5"/></g>
+<g class="annot" data-time="508" style="--m-delay:374ms">
+<line x1="150.1" y1="273.1" x2="158.1" y2="305.1" stroke="var(--text-faint)" stroke-width="0.8" stroke-dasharray="2 3" opacity="0.6"/>
+<circle cx="158.1" cy="305.1" r="1.6" fill="var(--text-faint)" opacity="0.7"/>
+<text x="158.1" y="302.1" font-family="var(--font-sans)" font-size="12" font-weight="600" fill="var(--text-faint)" text-anchor="start">37k QPS · Switched to cuVS brute_force</text>
+<text x="158.1" y="317.1" font-family="var(--font-sans)" font-size="11" fill="var(--text-muted)" text-anchor="start">RAFT-fused distance + top-k</text>
+</g>
+<g class="annot" data-time="1729" style="--m-delay:1147ms">
+<line x1="323.4" y1="265.0" x2="403.4" y2="221.0" stroke="var(--text-faint)" stroke-width="0.8" stroke-dasharray="2 3" opacity="0.6"/>
+<circle cx="403.4" cy="221.0" r="1.6" fill="var(--text-faint)" opacity="0.7"/>
+<text x="403.4" y="218.0" font-family="var(--font-sans)" font-size="12" font-weight="600" fill="var(--text-faint)" text-anchor="start">48k QPS · Enabled TF32 matmul</text>
+<text x="403.4" y="233.0" font-family="var(--font-sans)" font-size="11" fill="var(--text-muted)" text-anchor="start">~4× faster cuBLAS path</text>
+</g>
+<g class="annot" data-time="3975" style="--m-delay:2520ms">
+<line x1="642.3" y1="263.4" x2="632.3" y2="291.4" stroke="var(--text-faint)" stroke-width="0.8" stroke-dasharray="2 3" opacity="0.6"/>
+<circle cx="632.3" cy="291.4" r="1.6" fill="var(--text-faint)" opacity="0.7"/>
+<text x="632.3" y="288.4" font-family="var(--font-sans)" font-size="12" font-weight="600" fill="var(--text-faint)" text-anchor="end">50k QPS · Budget exhausted at 1.07M tokens</text>
+<text x="632.3" y="303.4" font-family="var(--font-sans)" font-size="11" fill="var(--text-muted)" text-anchor="end">stuck at 50k QPS — no further ideas</text>
+</g>
+<g class="annot" data-time="196" style="--m-delay:426ms">
+<line x1="105.8" y1="180.6" x2="151.8" y2="148.6" stroke="var(--accent)" stroke-width="0.8" stroke-dasharray="2 3" opacity="0.6"/>
+<circle cx="151.8" cy="148.6" r="1.6" fill="var(--accent)" opacity="0.7"/>
+<text x="151.8" y="145.6" font-family="var(--font-sans)" font-size="12" font-weight="600" fill="var(--accent)" text-anchor="start">162k QPS · Adopted flashlib.flash_knn</text>
+<text x="151.8" y="160.6" font-family="var(--font-sans)" font-size="11" fill="var(--text-muted)" text-anchor="start">Triton fused distance + top-k</text>
+</g>
+<g class="annot" data-time="1952" style="--m-delay:1362ms">
+<line x1="355.1" y1="75.9" x2="379.1" y2="51.9" stroke="var(--accent)" stroke-width="0.8" stroke-dasharray="2 3" opacity="0.6"/>
+<circle cx="379.1" cy="51.9" r="1.6" fill="var(--accent)" opacity="0.7"/>
+<text x="379.1" y="48.9" font-family="var(--font-sans)" font-size="12" font-weight="600" fill="var(--accent)" text-anchor="start">310k QPS · Tiled batching, plateau at 310k QPS</text>
+<text x="379.1" y="63.9" font-family="var(--font-sans)" font-size="11" fill="var(--text-muted)" text-anchor="start">all 10k queries in one launch · exited under budget</text>
+</g>
+</svg>
+</div>
+<div class="agent-view" data-view="online_single">
+  <div class="agent-view-sub">
+    <div class="agent-view-text">
+      <div class="agent-view-title">Online single (one query / call)</div>
+      <div class="agent-view-blurb">Per-query launches, so kernel launch overhead dominates. Both variants saturate around the same ceiling.</div>
+    </div>
+    <div class="agent-legend" aria-label="Legend">
+      <span><span class="sw sw-fl"></span>w/ flashlib</span>
+      <span><span class="sw sw-de"></span>default</span>
+    </div>
+  </div>
+<svg viewBox="0 0 720 400" role="img" aria-label="QPS over time for tier1.online_single – Claude Opus 4.7, w/ vs w/o flashlib">
+<line x1="78" y1="50" x2="78" y2="300" stroke="var(--rule-strong)" stroke-width="1"/>
+<line x1="78" y1="300" x2="660" y2="300" stroke="var(--rule-strong)" stroke-width="1"/>
+<g stroke="var(--rule)" stroke-width="1" stroke-dasharray="2 3">
+<line x1="78" y1="258.3" x2="660" y2="258.3"/>
+<line x1="78" y1="216.7" x2="660" y2="216.7"/>
+<line x1="78" y1="175.0" x2="660" y2="175.0"/>
+<line x1="78" y1="133.3" x2="660" y2="133.3"/>
+<line x1="78" y1="91.7" x2="660" y2="91.7"/>
+<line x1="78" y1="50.0" x2="660" y2="50.0"/>
+</g>
+<g stroke="var(--rule)" stroke-width="1" stroke-dasharray="2 3">
+<line x1="220.0" y1="50" x2="220.0" y2="300"/>
+<line x1="361.9" y1="50" x2="361.9" y2="300"/>
+<line x1="503.9" y1="50" x2="503.9" y2="300"/>
+<line x1="645.8" y1="50" x2="645.8" y2="300"/>
+</g>
+<g font-family="var(--font-sans)" font-size="12" fill="var(--text-muted)" text-anchor="end">
+<text x="72" y="304.0">0</text>
+<text x="72" y="262.3">0.5k</text>
+<text x="72" y="220.7">1k</text>
+<text x="72" y="179.0">1.5k</text>
+<text x="72" y="137.3">2k</text>
+<text x="72" y="95.7">2.5k</text>
+<text x="72" y="54.0">3k</text>
+</g>
+<text x="-175.0" y="18" transform="rotate(-90)" font-family="var(--font-sans)" font-size="13" fill="var(--text-muted)" text-anchor="middle">QPS at recall ≥ 0.999</text>
+<g font-family="var(--font-sans)" font-size="12" fill="var(--text-muted)" text-anchor="middle">
+<text x="78.0" y="318">0s</text>
+<text x="220.0" y="318">1000s</text>
+<text x="361.9" y="318">2000s</text>
+<text x="503.9" y="318">3000s</text>
+<text x="645.8" y="318">4000s</text>
+<text x="369.0" y="338" font-size="13">Elapsed time (Claude Opus 4.7, 1M-token budget)</text>
+</g>
+<polyline class="curve" data-variant="default" points="78.0,300.0 152.4,300.0 152.4,257.1 256.8,257.1 256.8,255.7 371.1,255.7 371.1,87.1 556.7,87.1 556.7,81.0 565.5,81.0 565.5,80.7 565.5,80.7 565.5,80.1 565.5,80.1 565.5,79.8 591.9,79.8 591.9,79.7 642.2,79.7 642.2,79.7" fill="none" stroke="var(--text-faint)" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" opacity="0.55" style="--draw-dur:2520ms"/>
+<circle class="marker" data-time="524" cx="152.4" cy="257.1" r="4" fill="var(--text-faint)" stroke="var(--surface)" stroke-width="1.5" opacity="0.7" style="--m-delay:239ms"/>
+<circle class="marker" data-time="1259" cx="256.8" cy="255.7" r="4" fill="var(--text-faint)" stroke="var(--surface)" stroke-width="1.5" opacity="0.7" style="--m-delay:712ms"/>
+<circle class="marker" data-time="2065" cx="371.1" cy="87.1" r="4" fill="var(--text-faint)" stroke="var(--surface)" stroke-width="1.5" opacity="0.7" style="--m-delay:1083ms"/>
+<circle class="marker" data-time="3372" cx="556.7" cy="81.0" r="4" fill="var(--text-faint)" stroke="var(--surface)" stroke-width="1.5" opacity="0.7" style="--m-delay:2221ms"/>
+<circle class="marker" data-time="3434" cx="565.5" cy="80.7" r="4" fill="var(--text-faint)" stroke="var(--surface)" stroke-width="1.5" opacity="0.7" style="--m-delay:2269ms"/>
+<circle class="marker" data-time="3434" cx="565.5" cy="80.1" r="4" fill="var(--text-faint)" stroke="var(--surface)" stroke-width="1.5" opacity="0.7" style="--m-delay:2269ms"/>
+<circle class="marker" data-time="3434" cx="565.5" cy="79.8" r="4" fill="var(--text-faint)" stroke="var(--surface)" stroke-width="1.5" opacity="0.7" style="--m-delay:2269ms"/>
+<circle class="marker" data-time="3620" cx="591.9" cy="79.7" r="4" fill="var(--text-faint)" stroke="var(--surface)" stroke-width="1.5" opacity="0.7" style="--m-delay:2358ms"/>
+<g class="marker" data-time="3974" transform="translate(642.2,79.7)" style="--m-delay:2520ms"><line x1="-4" y1="-4" x2="4" y2="4" stroke="var(--text-faint)" stroke-width="1.6" opacity="0.9"/><line x1="-4" y1="4" x2="4" y2="-4" stroke="var(--text-faint)" stroke-width="1.6" opacity="0.9"/></g>
+<polyline class="curve" data-variant="flashlib" points="78.0,300.0 109.8,300.0 109.8,137.8 134.8,137.8 134.8,123.8 343.7,123.8 343.7,123.6 415.9,123.6 415.9,87.0 484.0,87.0 484.0,84.9 499.2,84.9 499.2,84.9" fill="none" stroke="var(--accent)" stroke-width="2.0" stroke-linejoin="round" stroke-linecap="round" opacity="1.0" style="--draw-dur:1881ms"/>
+<circle class="marker" data-time="224" cx="109.8" cy="137.8" r="4" fill="var(--accent)" stroke="var(--surface)" stroke-width="1.5" opacity="1.0" style="--m-delay:94ms"/>
+<circle class="marker" data-time="400" cx="134.8" cy="123.8" r="4" fill="var(--accent)" stroke="var(--surface)" stroke-width="1.5" opacity="1.0" style="--m-delay:647ms"/>
+<circle class="marker" data-time="1871" cx="343.7" cy="123.6" r="4" fill="var(--accent)" stroke="var(--surface)" stroke-width="1.5" opacity="1.0" style="--m-delay:1306ms"/>
+<circle class="marker" data-time="2380" cx="415.9" cy="87.0" r="4" fill="var(--accent)" stroke="var(--surface)" stroke-width="1.5" opacity="1.0" style="--m-delay:1520ms"/>
+<circle class="marker" data-time="2860" cx="484.0" cy="84.9" r="4" fill="var(--accent)" stroke="var(--surface)" stroke-width="1.5" opacity="1.0" style="--m-delay:1829ms"/>
+<g class="marker" data-time="2966" transform="translate(499.2,84.9)" style="--m-delay:1881ms"><polygon points="-3.5,-3.5 3.5,-3.5 3.5,3.5 -3.5,3.5" fill="var(--accent)" stroke="var(--surface)" stroke-width="1.5"/></g>
+<g class="annot" data-time="524" style="--m-delay:238ms">
+<line x1="152.4" y1="257.2" x2="166.4" y2="291.2" stroke="var(--text-faint)" stroke-width="0.8" stroke-dasharray="2 3" opacity="0.6"/>
+<circle cx="166.4" cy="291.2" r="1.6" fill="var(--text-faint)" opacity="0.7"/>
+<text x="166.4" y="288.2" font-family="var(--font-sans)" font-size="12" font-weight="600" fill="var(--text-faint)" text-anchor="start">0.5k QPS · Naive cuVS path for bsz=1</text>
+<text x="166.4" y="303.2" font-family="var(--font-sans)" font-size="11" fill="var(--text-muted)" text-anchor="start">RAFT fused kernel wastes launch on 1 query</text>
+</g>
+<g class="annot" data-time="2065" style="--m-delay:1083ms">
+<line x1="371.1" y1="87.1" x2="393.1" y2="113.1" stroke="var(--text-faint)" stroke-width="0.8" stroke-dasharray="2 3" opacity="0.6"/>
+<circle cx="393.1" cy="113.1" r="1.6" fill="var(--text-faint)" opacity="0.7"/>
+<text x="393.1" y="110.1" font-family="var(--font-sans)" font-size="12" font-weight="600" fill="var(--text-faint)" text-anchor="start">2.6k QPS · Dispatched torch path for bsz≤64</text>
+<text x="393.1" y="125.1" font-family="var(--font-sans)" font-size="11" fill="var(--text-muted)" text-anchor="start">5× jump after eliminating cuVS overhead</text>
+</g>
+<g class="annot" data-time="224" style="--m-delay:93ms">
+<line x1="109.8" y1="137.8" x2="133.8" y2="111.8" stroke="var(--accent)" stroke-width="0.8" stroke-dasharray="2 3" opacity="0.6"/>
+<circle cx="133.8" cy="111.8" r="1.6" fill="var(--accent)" opacity="0.7"/>
+<text x="133.8" y="108.8" font-family="var(--font-sans)" font-size="12" font-weight="600" fill="var(--accent)" text-anchor="start">1.9k QPS · Per-query flash_knn</text>
+<text x="133.8" y="123.8" font-family="var(--font-sans)" font-size="11" fill="var(--text-muted)" text-anchor="start">launch overhead dominates this regime</text>
+</g>
+<g class="annot" data-time="2380" style="--m-delay:1520ms">
+<line x1="415.8" y1="87.0" x2="429.8" y2="61.0" stroke="var(--accent)" stroke-width="0.8" stroke-dasharray="2 3" opacity="0.6"/>
+<circle cx="429.8" cy="61.0" r="1.6" fill="var(--accent)" opacity="0.7"/>
+<text x="429.8" y="58.0" font-family="var(--font-sans)" font-size="12" font-weight="600" fill="var(--accent)" text-anchor="start">2.6k QPS · Trimmed per-call Python overhead</text>
+<text x="429.8" y="73.0" font-family="var(--font-sans)" font-size="11" fill="var(--text-muted)" text-anchor="start">torch fallback for bsz=1 not needed</text>
+</g>
+</svg>
+</div>
+<div class="agent-view" data-view="streaming">
+  <div class="agent-view-sub">
+    <div class="agent-view-text">
+      <div class="agent-view-title">Streaming (small slabs, hard 0.999 recall)</div>
+      <div class="agent-view-blurb">Tie-breaks against the bench's cupy ground truth dominate. Hybrid fast/slow paths unlock the high-QPS region.</div>
+    </div>
+    <div class="agent-legend" aria-label="Legend">
+      <span><span class="sw sw-fl"></span>w/ flashlib</span>
+      <span><span class="sw sw-de"></span>default</span>
+    </div>
+  </div>
+<svg viewBox="0 0 720 400" role="img" aria-label="QPS over time for tier1.streaming – Claude Opus 4.7, w/ vs w/o flashlib">
+<line x1="78" y1="50" x2="78" y2="300" stroke="var(--rule-strong)" stroke-width="1"/>
+<line x1="78" y1="300" x2="660" y2="300" stroke="var(--rule-strong)" stroke-width="1"/>
+<g stroke="var(--rule)" stroke-width="1" stroke-dasharray="2 3">
+<line x1="78" y1="258.3" x2="660" y2="258.3"/>
+<line x1="78" y1="216.7" x2="660" y2="216.7"/>
+<line x1="78" y1="175.0" x2="660" y2="175.0"/>
+<line x1="78" y1="133.3" x2="660" y2="133.3"/>
+<line x1="78" y1="91.7" x2="660" y2="91.7"/>
+<line x1="78" y1="50.0" x2="660" y2="50.0"/>
+</g>
+<g stroke="var(--rule)" stroke-width="1" stroke-dasharray="2 3">
+<line x1="220.0" y1="50" x2="220.0" y2="300"/>
+<line x1="361.9" y1="50" x2="361.9" y2="300"/>
+<line x1="503.9" y1="50" x2="503.9" y2="300"/>
+<line x1="645.8" y1="50" x2="645.8" y2="300"/>
+</g>
+<g font-family="var(--font-sans)" font-size="12" fill="var(--text-muted)" text-anchor="end">
+<text x="72" y="304.0">0</text>
+<text x="72" y="262.3">1k</text>
+<text x="72" y="220.7">2k</text>
+<text x="72" y="179.0">3k</text>
+<text x="72" y="137.3">4k</text>
+<text x="72" y="95.7">5k</text>
+<text x="72" y="54.0">6k</text>
+</g>
+<text x="-175.0" y="18" transform="rotate(-90)" font-family="var(--font-sans)" font-size="13" fill="var(--text-muted)" text-anchor="middle">QPS at recall ≥ 0.999</text>
+<g font-family="var(--font-sans)" font-size="12" fill="var(--text-muted)" text-anchor="middle">
+<text x="78.0" y="318">0s</text>
+<text x="220.0" y="318">1000s</text>
+<text x="361.9" y="318">2000s</text>
+<text x="503.9" y="318">3000s</text>
+<text x="645.8" y="318">4000s</text>
+<text x="369.0" y="338" font-size="13">Elapsed time (Claude Opus 4.7, 1M-token budget)</text>
+</g>
+<polyline class="curve" data-variant="default" points="78.0,300.0 204.2,300.0 204.2,262.2 293.2,262.2 293.2,261.2 340.3,261.2 340.3,261.0 371.1,261.0 371.1,259.7 521.4,259.7 521.4,259.7 556.7,259.7 556.7,259.6 591.9,259.6 591.9,259.5 591.9,259.5 591.9,259.5 642.2,259.5 642.2,259.5" fill="none" stroke="var(--text-faint)" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" opacity="0.55" style="--draw-dur:2520ms"/>
+<circle class="marker" data-time="888" cx="204.2" cy="262.2" r="4" fill="var(--text-faint)" stroke="var(--surface)" stroke-width="1.5" opacity="0.7" style="--m-delay:525ms"/>
+<circle class="marker" data-time="1515" cx="293.2" cy="261.2" r="4" fill="var(--text-faint)" stroke="var(--surface)" stroke-width="1.5" opacity="0.7" style="--m-delay:1053ms"/>
+<circle class="marker" data-time="1847" cx="340.3" cy="261.0" r="4" fill="var(--text-faint)" stroke="var(--surface)" stroke-width="1.5" opacity="0.7" style="--m-delay:1254ms"/>
+<circle class="marker" data-time="2065" cx="371.1" cy="259.7" r="4" fill="var(--text-faint)" stroke="var(--surface)" stroke-width="1.5" opacity="0.7" style="--m-delay:1383ms"/>
+<circle class="marker" data-time="3123" cx="521.4" cy="259.7" r="4" fill="var(--text-faint)" stroke="var(--surface)" stroke-width="1.5" opacity="0.7" style="--m-delay:2015ms"/>
+<circle class="marker" data-time="3372" cx="556.7" cy="259.6" r="4" fill="var(--text-faint)" stroke="var(--surface)" stroke-width="1.5" opacity="0.7" style="--m-delay:2162ms"/>
+<circle class="marker" data-time="3620" cx="591.9" cy="259.5" r="4" fill="var(--text-faint)" stroke="var(--surface)" stroke-width="1.5" opacity="0.7" style="--m-delay:2310ms"/>
+<circle class="marker" data-time="3620" cx="591.9" cy="259.5" r="4" fill="var(--text-faint)" stroke="var(--surface)" stroke-width="1.5" opacity="0.7" style="--m-delay:2310ms"/>
+<g class="marker" data-time="3974" transform="translate(642.2,259.5)" style="--m-delay:2520ms"><line x1="-4" y1="-4" x2="4" y2="4" stroke="var(--text-faint)" stroke-width="1.6" opacity="0.9"/><line x1="-4" y1="4" x2="4" y2="-4" stroke="var(--text-faint)" stroke-width="1.6" opacity="0.9"/></g>
+<polyline class="curve" data-variant="flashlib" points="78.0,300.0 329.7,300.0 329.7,258.9 386.7,258.9 386.7,121.3 418.7,121.3 418.7,121.0 422.9,121.0 422.9,107.0 484.0,107.0 484.0,89.9 499.2,89.9 499.2,89.9" fill="none" stroke="var(--accent)" stroke-width="2.0" stroke-linejoin="round" stroke-linecap="round" opacity="1.0" style="--draw-dur:1881ms"/>
+<circle class="marker" data-time="1773" cx="329.7" cy="258.9" r="4" fill="var(--accent)" stroke="var(--surface)" stroke-width="1.5" opacity="1.0" style="--m-delay:750ms"/>
+<circle class="marker" data-time="2174" cx="386.7" cy="121.3" r="4" fill="var(--accent)" stroke="var(--surface)" stroke-width="1.5" opacity="1.0" style="--m-delay:1042ms"/>
+<circle class="marker" data-time="2400" cx="418.7" cy="121.0" r="4" fill="var(--accent)" stroke="var(--surface)" stroke-width="1.5" opacity="1.0" style="--m-delay:1547ms"/>
+<circle class="marker" data-time="2429" cx="422.9" cy="107.0" r="4" fill="var(--accent)" stroke="var(--surface)" stroke-width="1.5" opacity="1.0" style="--m-delay:1560ms"/>
+<circle class="marker" data-time="2860" cx="484.0" cy="89.9" r="4" fill="var(--accent)" stroke="var(--surface)" stroke-width="1.5" opacity="1.0" style="--m-delay:1785ms"/>
+<g class="marker" data-time="2966" transform="translate(499.2,89.9)" style="--m-delay:1881ms"><polygon points="-3.5,-3.5 3.5,-3.5 3.5,3.5 -3.5,3.5" fill="var(--accent)" stroke="var(--surface)" stroke-width="1.5"/></g>
+<g class="annot" data-time="889" style="--m-delay:683ms">
+<line x1="204.2" y1="262.2" x2="218.2" y2="290.2" stroke="var(--text-faint)" stroke-width="0.8" stroke-dasharray="2 3" opacity="0.6"/>
+<circle cx="218.2" cy="290.2" r="1.6" fill="var(--text-faint)" opacity="0.7"/>
+<text x="218.2" y="287.2" font-family="var(--font-sans)" font-size="12" font-weight="600" fill="var(--text-faint)" text-anchor="start">0.9k QPS · cupy argpartition path</text>
+<text x="218.2" y="302.2" font-family="var(--font-sans)" font-size="11" fill="var(--text-muted)" text-anchor="start">matches bench GT byte-for-byte</text>
+</g>
+<g class="annot" data-time="3975" style="--m-delay:2520ms">
+<line x1="642.3" y1="259.5" x2="628.3" y2="287.5" stroke="var(--text-faint)" stroke-width="0.8" stroke-dasharray="2 3" opacity="0.6"/>
+<circle cx="628.3" cy="287.5" r="1.6" fill="var(--text-faint)" opacity="0.7"/>
+<text x="628.3" y="284.5" font-family="var(--font-sans)" font-size="12" font-weight="600" fill="var(--text-faint)" text-anchor="end">1.0k QPS · Slow incremental tuning</text>
+<text x="628.3" y="299.5" font-family="var(--font-sans)" font-size="11" fill="var(--text-muted)" text-anchor="end">never tried a hybrid fast/slow split</text>
+</g>
+<g class="annot" data-time="1773" style="--m-delay:749ms">
+<line x1="329.7" y1="258.9" x2="355.7" y2="236.9" stroke="var(--accent)" stroke-width="0.8" stroke-dasharray="2 3" opacity="0.6"/>
+<circle cx="355.7" cy="236.9" r="1.6" fill="var(--accent)" opacity="0.7"/>
+<text x="355.7" y="233.9" font-family="var(--font-sans)" font-size="12" font-weight="600" fill="var(--accent)" text-anchor="start">1.0k QPS · First config that holds 0.999 recall</text>
+<text x="355.7" y="248.9" font-family="var(--font-sans)" font-size="11" fill="var(--text-muted)" text-anchor="start">flash_knn alone tie-breaks ≠ cupy GT</text>
+</g>
+<g class="annot" data-time="2175" style="--m-delay:1452ms">
+<line x1="386.7" y1="121.2" x2="364.7" y2="153.2" stroke="var(--accent)" stroke-width="0.8" stroke-dasharray="2 3" opacity="0.6"/>
+<circle cx="364.7" cy="153.2" r="1.6" fill="var(--accent)" opacity="0.7"/>
+<text x="364.7" y="150.2" font-family="var(--font-sans)" font-size="12" font-weight="600" fill="var(--accent)" text-anchor="end">4.3k QPS · Hybrid path</text>
+<text x="364.7" y="165.2" font-family="var(--font-sans)" font-size="11" fill="var(--text-muted)" text-anchor="end">flash_knn fast + cupy tie-break for ties</text>
+</g>
+<g class="annot" data-time="2860" style="--m-delay:1785ms">
+<line x1="484.0" y1="89.9" x2="500.0" y2="67.9" stroke="var(--accent)" stroke-width="0.8" stroke-dasharray="2 3" opacity="0.6"/>
+<circle cx="500.0" cy="67.9" r="1.6" fill="var(--accent)" opacity="0.7"/>
+<text x="500.0" y="64.9" font-family="var(--font-sans)" font-size="12" font-weight="600" fill="var(--accent)" text-anchor="end">5.0k QPS · Reduced cupy fallback rate</text>
+<text x="500.0" y="79.9" font-family="var(--font-sans)" font-size="11" fill="var(--text-muted)" text-anchor="end">≥95% of queries skip the slow path</text>
+</g>
+</svg>
+</div>
+<div class="agent-summary">
+  <div class="agent-card">
+    <div class="agent-card-name">Offline batch</div>
+    <div class="agent-card-nums">
+      <div><span class="num-fl">310k</span><span class="num-lab">w/ flashlib</span></div>
+      <div><span class="num-de">50k</span><span class="num-lab">default</span></div>
+    </div>
+    <div class="agent-card-ratio">6.2×</div>
+  </div>
+  <div class="agent-card">
+    <div class="agent-card-name">Online single</div>
+    <div class="agent-card-nums">
+      <div><span class="num-fl">2.6k</span><span class="num-lab">w/ flashlib</span></div>
+      <div><span class="num-de">2.6k</span><span class="num-lab">default</span></div>
+    </div>
+    <div class="agent-card-ratio">≈ 1×</div>
+  </div>
+  <div class="agent-card">
+    <div class="agent-card-name">Streaming</div>
+    <div class="agent-card-nums">
+      <div><span class="num-fl">5.0k</span><span class="num-lab">w/ flashlib</span></div>
+      <div><span class="num-de">1.0k</span><span class="num-lab">default</span></div>
+    </div>
+    <div class="agent-card-ratio">5.2×</div>
+  </div>
+</div>
+</div>
+
+<p>On the two settings where flashlib unlocks a structural win (offline batch and streaming), the flashlib-prompted agent reaches <strong>5&ndash;6&times; higher QPS</strong> by directly adopting <code>flash_knn</code> instead of laboriously rediscovering the cuVS path and slowly bolting on TF32. On online single, where per-query launch overhead dominates either way, both variants converge to roughly the same ceiling. Just as importantly, the flashlib-prompted agent finishes the task <em>naturally</em> at 904k tokens with budget to spare; the default agent runs out at 1.07M tokens with no further ideas on hand &mdash; it hit a 50k QPS plateau on the dominant offline-batch task and could not escape it within the budget.</p>
+
+<h2>Example: Flash-KMeans in a few lines</h2>
+
+<p>FlashLib ships on PyPI and installs with a single command. The smart dispatcher in <code>flashlib.primitives.kmeans</code> takes a GPU tensor of shape <code>(N, D)</code> or <code>(B, N, D)</code> and returns the cluster IDs and centroids; it picks between the Triton path, the Hopper-only CuteDSL FA3-style fused-assign path, and a pure-torch fallback automatically based on the shape.</p>
+
+<pre class="codeblock"><code><span class="c">$</span> pip install flashlib</code></pre>
+
+<pre class="codeblock"><code><span class="k">import</span> <span class="mod">torch</span>
+<span class="k">from</span> <span class="mod">flashlib.primitives.kmeans</span> <span class="k">import</span> <span class="fn">flash_kmeans</span>
+
+<span class="c"># 1M points, 128 dims on a single H200 -- runs in a few ms.</span>
+x = <span class="mod">torch</span>.<span class="fn">randn</span>(<span class="num">1_000_000</span>, <span class="num">128</span>, <span class="kw">device</span>=<span class="str">"cuda"</span>, <span class="kw">dtype</span>=<span class="mod">torch</span>.float32)
+labels, centroids = <span class="fn">flash_kmeans</span>(x, <span class="kw">n_clusters</span>=<span class="num">1024</span>, <span class="kw">max_iters</span>=<span class="num">20</span>)
+<span class="c"># labels:    (1, 1_000_000) int64   -- cluster assignment per point</span>
+<span class="c"># centroids: (1, 1024, 128) float32 -- final cluster centers</span></code></pre>
+
+<p>If you want to know what the call will cost <em>before</em> launching it &mdash; useful for an agent budgeting a pipeline of ten primitives &mdash; the same shape goes through the pure-stdlib cost API from Principle&nbsp;04:</p>
+
+<pre class="codeblock"><code><span class="k">import</span> <span class="mod">flashlib.info</span> <span class="k">as</span> <span class="mod">info</span>
+
+est = <span class="mod">info</span>.<span class="fn">estimate</span>(<span class="str">"kmeans"</span>,
+                    <span class="kw">shape</span>=(<span class="num">1_000_000</span>, <span class="num">128</span>),
+                    <span class="kw">params</span>={<span class="str">"K"</span>: <span class="num">1024</span>, <span class="str">"max_iters"</span>: <span class="num">20</span>})
+<span class="fn">print</span>(est.<span class="fn">summary_line</span>())
+<span class="c"># kmeans  ~7 ms  bound=compute  ~140 TF  (64% peak)  [calibrated]</span></code></pre>
+
+<p>Other primitives follow the same shape: <code>flash_knn</code>, <code>flash_pca</code>, <code>flash_hdbscan</code>, <code>flash_tsne</code>, <code>flashlib.gemm</code>, and the rest of the catalog are all one-call drop-ins with the same <code>tol</code> / <code>backend</code> knobs and the same <code>flashlib.info.estimate(...)</code> cost surface.</p>
+
+<h2>Limitations and Future Work</h2>
+
+<p>FlashLib's current release covers an important but incomplete slice of the classical-ML operator landscape &mdash; primarily the clustering, nearest-neighbour, dimensionality-reduction, and dense linear-algebra primitives most central to our own agentic-AI workloads. Extending the catalog is one of our top priorities; upcoming releases will deepen coverage of the existing families and add new ones (Gaussian mixtures, kernel methods, graph-based primitives, sparse inputs). A second limitation is hardware coverage: development and benchmarking have so far concentrated on H200. The dispatcher and kernels are written to be portable, but broader measurement and tuning across a wider range of hardware is still needed.</p>
+
+<h2>Acknowledgements</h2>
+
+<p>FlashLib was deeply inspired by several open-source efforts that pioneered the &ldquo;flash&rdquo; design playbook on which this work is built: <a href="https://github.com/Dao-AILab/flash-attention">FlashAttention</a>, <a href="https://crfm.stanford.edu/2023/10/12/flashdecoding.html">FlashDecoding</a>, NVIDIA's <a href="https://github.com/rapidsai/cuvs">cuVS</a> and <a href="https://github.com/rapidsai/cuml">cuML</a>, <a href="https://github.com/fla-org/flash-linear-attention">FlashLinearAttention</a>, and <a href="https://github.com/flashinfer-ai/flashinfer">FlashInfer</a>. We are also grateful to <strong>Dacheng&nbsp;Li</strong> (UC&nbsp;Berkeley), <strong>Shiyi&nbsp;Cao</strong> (UC&nbsp;Berkeley), <strong>Melissa&nbsp;Pan</strong> (UC&nbsp;Berkeley), and <strong>Zihao&nbsp;Ye</strong> (University of Washington) for many helpful discussions, and to the <em>flash-kmeans</em> and <em>Sparse&nbsp;VideoGen</em> communities for valuable feedback on early prototypes.</p>
+
+<h2>Citation</h2>
+
+<p>If you find FlashLib useful in your research or work, please cite this blog post:</p>
+
+<pre class="codeblock"><code>@misc{yang2026flashlib,
+  title        = {FlashLib: Bringing Flash Magic to Classical Machine Learning Operators},
+  author       = {Yang, Shuo and Xi, Haocheng and Zhao, Yilong and Mang, Qiuyang and
+                  Wang, Zhe and Sun, Shanlin and Keutzer, Kurt and Gonzalez, Joseph E. and
+                  Han, Song and Xu, Chenfeng and Stoica, Ion},
+  year         = {2026},
+  howpublished = {\url{https://flashml-org.github.io/}},
+  note         = {Blog post}
+}</code></pre>
+
+</article>
+
+<script>
+(function(){
+  var prefersReducedMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  var SPEEDUP_FOCUS_IDS = ['kmeans', 'knn', 'tsvd', 'pca', 'hdbscan'];
+  var SPEEDUP_ITEMS = [
+    { id:'ridge',    label:'Ridge',          color:'var(--c-ridge)',  geomean:44.2, max:115.5 },
+    { id:'mnb',      label:'MultinomialNB',  color:'var(--c-mnb)',    geomean:31.9, max:50.0 },
+    { id:'tsne',     label:'t-SNE',          color:'var(--c-tsne)',   geomean:20.6, max:59.8 },
+    { id:'hdbscan',  label:'HDBSCAN',        color:'var(--c-hdbscan)', geomean:12.3, max:56.9 },
+    { id:'kmeans',   label:'KMeans',         color:'var(--c-kmeans)', geomean:9.7,  max:25.9 },
+    { id:'tsvd',     label:'TruncatedSVD',   color:'var(--c-tsvd)',   geomean:9.7,  max:68.6 },
+    { id:'knn',      label:'KNN',            color:'var(--c-knn)',    geomean:8.1,  max:15.4 },
+    { id:'linreg',   label:'Linear Reg.',    color:'var(--c-linreg)', geomean:4.3,  max:20.3 },
+    { id:'umap',     label:'UMAP',           color:'var(--c-umap)',   geomean:3.8,  max:4.7 },
+    { id:'dbscan',   label:'DBSCAN',         color:'var(--c-dbscan)', geomean:3.8,  max:39.3 },
+    { id:'pca',      label:'PCA',            color:'var(--c-pca)',    geomean:3.5,  max:13.0 },
+    { id:'rf',       label:'Random Forest',  color:'var(--c-rf)',     geomean:3.4,  max:5.1 },
+    { id:'logreg',   label:'Logistic Reg.',  color:'var(--c-logreg)', geomean:2.0,  max:2.6 }
+  ];
+  var SPEEDUP_META = {
+    geomean: {
+      maxValue: 50,
+      ticks: [1, 2, 5, 10, 20, 50],
+      axisLabel: 'Geomean speedup vs cuML 25.10 (log)'
+    },
+    max: {
+      maxValue: 200,
+      ticks: [1, 2, 5, 10, 20, 50, 100, 200],
+      axisLabel: 'Maximum speedup vs cuML 25.10 (log)'
+    }
+  };
+  var FIG_OP_BY_COLOR = {
+    '#d85a30': 'kmeans',
+    '#1d9e75': 'knn',
+    '#534ab7': 'tsvd',
+    '#185fa5': 'pca',
+    '#d4537e': 'hdbscan'
+  };
+
+  function svgEl(name, attrs) {
+    var el = document.createElementNS('http://www.w3.org/2000/svg', name);
+    Object.keys(attrs || {}).forEach(function(key) {
+      el.setAttribute(key, attrs[key]);
+    });
+    return el;
+  }
+
+  function clamp(v, lo, hi) {
+    return Math.max(lo, Math.min(hi, v));
+  }
+
+  function lerp(a, b, t) {
+    return a + (b - a) * t;
+  }
+
+  function easeOutCubic(t) {
+    return 1 - Math.pow(1 - t, 3);
+  }
+
+  function speedupOrder(view, focus) {
+    var ordered = SPEEDUP_ITEMS.slice().sort(function(a, b) { return b[view] - a[view]; });
+    if (!focus) return ordered;
+    var picked = ordered.filter(function(item) { return item.id === focus; });
+    if (!picked.length) return ordered;
+    return picked.concat(ordered.filter(function(item) { return item.id !== focus; }));
+  }
+
+  function speedupX(view, value) {
+    var left = 130;
+    var right = 660;
+    var logMax = Math.log10(SPEEDUP_META[view].maxValue);
+    return left + (Math.log10(value) / logMax) * (right - left);
+  }
+
+  function setupSpeedupChart(chart) {
+    if (!chart || chart._speedup) return;
+    var svg = chart.querySelector('.speedup-svg');
+    if (!svg) return;
+
+    svg.innerHTML = '';
+    var axis = svgEl('g');
+    var grid = svgEl('g');
+    var ticks = svgEl('g');
+    var rows = svgEl('g');
+    var axisLabel = svgEl('text', {
+      x: '395',
+      y: '424',
+      'font-family': 'var(--font-sans)',
+      'font-size': '11.5',
+      fill: 'var(--text-muted)',
+      'text-anchor': 'middle'
+    });
+
+    axis.appendChild(svgEl('line', {
+      x1: '130', y1: '20', x2: '130', y2: '386',
+      stroke: 'var(--rule-strong)', 'stroke-width': '1'
+    }));
+    axis.appendChild(svgEl('line', {
+      x1: '130', y1: '386', x2: '660', y2: '386',
+      stroke: 'var(--rule-strong)', 'stroke-width': '1'
+    }));
+
+    var tickLines = [];
+    var tickTexts = [];
+    for (var i = 0; i < 8; i++) {
+      var line = svgEl('line', {
+        x1: '130', y1: '20', x2: '130', y2: '386',
+        stroke: 'var(--rule)', 'stroke-width': '1', 'stroke-dasharray': '2 3', opacity: '0'
+      });
+      var text = svgEl('text', {
+        x: '130', y: '402',
+        'font-family': 'var(--font-sans)',
+        'font-size': '11',
+        fill: 'var(--text-muted)',
+        'text-anchor': 'middle',
+        opacity: '0'
+      });
+      tickLines.push(line);
+      tickTexts.push(text);
+      grid.appendChild(line);
+      ticks.appendChild(text);
+    }
+
+    var rowNodes = {};
+    SPEEDUP_ITEMS.forEach(function(item) {
+      var row = svgEl('g');
+      var highlight = svgEl('rect', {
+        x: '126', y: '-3', width: '538', height: '22', rx: '5',
+        fill: item.color, opacity: '0'
+      });
+      var name = svgEl('text', {
+        x: '124', y: '13',
+        'font-family': 'var(--font-sans)',
+        'font-size': '12.5',
+        'text-anchor': 'end',
+        fill: 'var(--text-strong)',
+        'font-weight': '500'
+      });
+      name.textContent = item.label;
+      var bar = svgEl('rect', {
+        x: '130', y: '0', width: '0', height: '16', rx: '2',
+        fill: item.color, opacity: '0.88'
+      });
+      var value = svgEl('text', {
+        x: '138', y: '13',
+        'font-family': 'var(--font-sans)',
+        'font-size': '12.5',
+        fill: 'var(--text-strong)',
+        'font-weight': '600',
+        'font-feature-settings': "'tnum','lnum'",
+        'text-anchor': 'start'
+      });
+      row.appendChild(highlight);
+      row.appendChild(name);
+      row.appendChild(bar);
+      row.appendChild(value);
+      rows.appendChild(row);
+      rowNodes[item.id] = {
+        row: row,
+        highlight: highlight,
+        name: name,
+        bar: bar,
+        value: value
+      };
+    });
+
+    svg.appendChild(axis);
+    svg.appendChild(grid);
+    svg.appendChild(rows);
+    svg.appendChild(ticks);
+    svg.appendChild(axisLabel);
+
+    chart._speedup = {
+      svg: svg,
+      rowNodes: rowNodes,
+      tickLines: tickLines,
+      tickTexts: tickTexts,
+      axisLabel: axisLabel,
+      summaryLabel: chart.querySelector('.speedup-summary-label'),
+      summaryCopy: chart.querySelector('.speedup-summary-copy'),
+      state: null,
+      raf: null
+    };
+
+    var focusToggle = chart.querySelector('.speedup-focus-toggle');
+    if (focusToggle) {
+      focusToggle.addEventListener('click', function(e) {
+        var btn = e.target.closest('button[data-focus]');
+        if (!btn) return;
+        var next = chart.dataset.focus === btn.dataset.focus ? '' : btn.dataset.focus;
+        if (next) chart.dataset.focus = next;
+        else chart.removeAttribute('data-focus');
+        renderSpeedupChart(chart, true);
+      });
+    }
+
+    renderSpeedupChart(chart, true);
+  }
+
+  function setSpeedupSummary(chart, focus) {
+    var ui = chart._speedup;
+    if (!ui || !ui.summaryLabel || !ui.summaryCopy) return;
+    if (!focus) {
+      ui.summaryLabel.textContent = 'Spotlight';
+      ui.summaryCopy.textContent = 'Click one of the five primitive buttons to pin it to the top, then switch between geomean and max to watch the ordering and bar lengths move smoothly.';
+      return;
+    }
+    var item = SPEEDUP_ITEMS.find(function(entry) { return entry.id === focus; });
+    if (!item) return;
+    ui.summaryLabel.textContent = item.label;
+    ui.summaryCopy.textContent = 'Geomean ' + item.geomean.toFixed(1) + '×, max ' + item.max.toFixed(1) + '×. This is one of the five online-critical primitives mirrored in Figure 1.';
+  }
+
+  function renderSpeedupChart(chart, animate) {
+    var ui = chart && chart._speedup;
+    if (!ui) return;
+
+    var view = chart.dataset.view || 'geomean';
+    var focus = chart.dataset.focus || '';
+    var order = speedupOrder(view, focus);
+    var meta = SPEEDUP_META[view];
+
+    setSpeedupSummary(chart, focus);
+
+    chart.querySelectorAll('.speedup-focus-toggle button').forEach(function(btn) {
+      var on = btn.dataset.focus === focus;
+      btn.classList.toggle('active', on);
+      btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+
+    var target = { ticks: [], rows: {} };
+    meta.ticks.forEach(function(tick) {
+      target.ticks.push({
+        x: speedupX(view, tick),
+        opacity: tick === 1 ? 0 : 1,
+        label: tick + '×'
+      });
+    });
+    while (target.ticks.length < 8) {
+      target.ticks.push({ x: 130, opacity: 0, label: '' });
+    }
+
+    order.forEach(function(item, idx) {
+      var barWidth = speedupX(view, item[view]) - 130;
+      var nearRight = 130 + barWidth > 604;
+      target.rows[item.id] = {
+        y: 20 + idx * 28,
+        width: barWidth,
+        valueX: nearRight ? 656 : 136 + barWidth,
+        groupOpacity: focus ? (item.id === focus ? 1 : 0.1) : 1,
+        highlightOpacity: focus && item.id === focus ? 0.16 : 0,
+        anchorEnd: nearRight ? 1 : 0,
+        label: item[view].toFixed(1) + '×',
+        isFocused: item.id === focus
+      };
+    });
+
+    ui.axisLabel.textContent = meta.axisLabel;
+    ui.tickTexts.forEach(function(textNode, idx) {
+      textNode.textContent = target.ticks[idx].label;
+    });
+
+    SPEEDUP_ITEMS.forEach(function(item) {
+      var rowState = target.rows[item.id];
+      var rowNode = ui.rowNodes[item.id];
+      rowNode.value.textContent = rowState.label;
+      rowNode.value.setAttribute('text-anchor', rowState.anchorEnd ? 'end' : 'start');
+      rowNode.name.setAttribute('fill', rowState.isFocused ? 'var(--text-strong)' : (focus ? 'var(--text-faint)' : 'var(--text-strong)'));
+      rowNode.value.setAttribute('fill', rowState.isFocused ? 'var(--text-strong)' : (focus ? 'var(--text-faint)' : 'var(--text-strong)'));
+      rowNode.name.setAttribute('font-weight', rowState.isFocused ? '600' : '500');
+    });
+
+    if (!ui.state) {
+      ui.state = { ticks: [], rows: {} };
+      target.ticks.forEach(function(tick) {
+        ui.state.ticks.push({ x: 130, opacity: 0, label: tick.label });
+      });
+      SPEEDUP_ITEMS.forEach(function(item, idx) {
+        ui.state.rows[item.id] = {
+          y: 20 + idx * 28,
+          width: 0,
+          valueX: 138,
+          groupOpacity: 1,
+          highlightOpacity: 0,
+          anchorEnd: 0
+        };
+      });
+    }
+
+    var from = {
+      ticks: ui.state.ticks.map(function(tick) {
+        return { x: tick.x, opacity: tick.opacity, label: tick.label };
+      }),
+      rows: {}
+    };
+    Object.keys(ui.state.rows).forEach(function(id) {
+      var row = ui.state.rows[id];
+      from.rows[id] = {
+        y: row.y,
+        width: row.width,
+        valueX: row.valueX,
+        groupOpacity: row.groupOpacity,
+        highlightOpacity: row.highlightOpacity,
+        anchorEnd: row.anchorEnd
+      };
+    });
+
+    ui.state = target;
+
+    function applyState(state) {
+      state.ticks.forEach(function(tick, idx) {
+        ui.tickLines[idx].setAttribute('x1', tick.x.toFixed(1));
+        ui.tickLines[idx].setAttribute('x2', tick.x.toFixed(1));
+        ui.tickLines[idx].setAttribute('opacity', tick.opacity.toFixed(3));
+        ui.tickTexts[idx].setAttribute('x', tick.x.toFixed(1));
+        ui.tickTexts[idx].setAttribute('opacity', tick.opacity.toFixed(3));
+      });
+      SPEEDUP_ITEMS.forEach(function(item) {
+        var rowState = state.rows[item.id];
+        var rowNode = ui.rowNodes[item.id];
+        rowNode.row.setAttribute('transform', 'translate(0,' + rowState.y.toFixed(1) + ')');
+        rowNode.row.setAttribute('opacity', rowState.groupOpacity.toFixed(3));
+        rowNode.highlight.setAttribute('opacity', rowState.highlightOpacity.toFixed(3));
+        rowNode.bar.setAttribute('width', Math.max(0, rowState.width).toFixed(1));
+        rowNode.value.setAttribute('x', rowState.valueX.toFixed(1));
+      });
+    }
+
+    if (ui.raf) cancelAnimationFrame(ui.raf);
+    if (!animate || prefersReducedMotion) {
+      applyState(target);
+      return;
+    }
+
+    var duration = 560;
+    var start = performance.now();
+    function frame(now) {
+      var t = clamp((now - start) / duration, 0, 1);
+      var eased = easeOutCubic(t);
+      var state = { ticks: [], rows: {} };
+      target.ticks.forEach(function(tick, idx) {
+        state.ticks.push({
+          x: lerp(from.ticks[idx].x, tick.x, eased),
+          opacity: lerp(from.ticks[idx].opacity, tick.opacity, eased),
+          label: tick.label
+        });
+      });
+      SPEEDUP_ITEMS.forEach(function(item) {
+        var fromRow = from.rows[item.id];
+        var toRow = target.rows[item.id];
+        state.rows[item.id] = {
+          y: lerp(fromRow.y, toRow.y, eased),
+          width: lerp(fromRow.width, toRow.width, eased),
+          valueX: lerp(fromRow.valueX, toRow.valueX, eased),
+          groupOpacity: lerp(fromRow.groupOpacity, toRow.groupOpacity, eased),
+          highlightOpacity: lerp(fromRow.highlightOpacity, toRow.highlightOpacity, eased),
+          anchorEnd: toRow.anchorEnd
+        };
+      });
+      applyState(state);
+      if (t < 1) ui.raf = requestAnimationFrame(frame);
+      else ui.raf = null;
+    }
+    ui.raf = requestAnimationFrame(frame);
+  }
+
+  // ── chart toggle (geomean/max + 3-way agent settings) ──────────────
+  document.querySelectorAll('.toggle').forEach(function(toggle){
+    toggle.addEventListener('click', function(e){
+      var btn = e.target.closest('button[data-view]');
+      if (!btn || btn.classList.contains('active')) return;
+      var view = btn.dataset.view;
+      var chart = toggle.closest('.chart');
+      chart.dataset.view = view;
+      toggle.querySelectorAll('button').forEach(function(b){
+        var on = b.dataset.view === view;
+        b.classList.toggle('active', on);
+        b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      });
+      if (chart.classList.contains('speedup-chart')) {
+        renderSpeedupChart(chart, true);
+      }
+      // For the agent chart, animate the freshly-shown view
+      if (chart.classList.contains('agent-chart')) {
+        var freshView = chart.querySelector('.agent-view[data-view="' + view + '"]');
+        if (freshView) playView(freshView);
+      }
+    });
+  });
+
+  document.querySelectorAll('.speedup-chart').forEach(setupSpeedupChart);
+
+  // ── agent benchmark animator ──────────────────────────────────────
+  function setupView(view) {
+    view.querySelectorAll('.curve').forEach(function(p) {
+      try { p.style.setProperty('--len', p.getTotalLength()); }
+      catch (err) { p.style.setProperty('--len', 9999); }
+    });
+  }
+  function playView(view) {
+    // Reset to initial (hidden) state, force a layout flush, then trigger transitions
+    view.classList.remove('played');
+    view.classList.remove('animated');
+    void view.offsetWidth;
+    view.classList.add('animated');
+    requestAnimationFrame(function() {
+      requestAnimationFrame(function() { view.classList.add('played'); });
+    });
+  }
+
+  var charts = document.querySelectorAll('.agent-chart');
+  charts.forEach(function(chart) {
+    chart.querySelectorAll('.agent-view').forEach(setupView);
+    var replayBtn = chart.querySelector('.agent-replay');
+    if (replayBtn) {
+      replayBtn.addEventListener('click', function() {
+        var active = chart.querySelector('.agent-view[data-view="' + chart.dataset.view + '"]');
+        if (active) playView(active);
+      });
+    }
+  });
+
+  // First play when the chart scrolls into view (≥ 30% visible)
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function(entries) {
+      entries.forEach(function(e) {
+        if (!e.isIntersecting) return;
+        var chart = e.target;
+        var active = chart.querySelector('.agent-view[data-view="' + chart.dataset.view + '"]');
+        if (active) playView(active);
+        io.unobserve(chart);
+      });
+    }, { threshold: 0.3 });
+    charts.forEach(function(c) { io.observe(c); });
+  } else {
+    // Fallback: play immediately
+    charts.forEach(function(c) {
+      var active = c.querySelector('.agent-view[data-view="' + c.dataset.view + '"]');
+      if (active) playView(active);
+    });
+  }
+
+  // ── Figure 1: hover-to-cite tooltip on the 15 data points ──────────
+  document.querySelectorAll('figure.fig-interactive').forEach(function(fig){
+    var host = fig.querySelector('.fig-host');
+    var tip  = fig.querySelector('.fig-tip');
+    var dataNode = fig.querySelector('script.fig-tip-data');
+    if (!host || !tip || !dataNode) return;
+    var TIPS;
+    try { TIPS = JSON.parse(dataNode.textContent); } catch (e) { TIPS = {}; }
+
+    if (fig.classList.contains('fig-latency-chart')) {
+      var svg = fig.querySelector('svg');
+      var opToggle = fig.querySelector('.fig-op-toggle');
+      if (svg && opToggle) {
+        var opTargets = [];
+        svg.querySelectorAll('polyline[stroke]').forEach(function(el) {
+          var op = FIG_OP_BY_COLOR[(el.getAttribute('stroke') || '').toLowerCase()];
+          if (!op) return;
+          el.dataset.op = op;
+          opTargets.push({ el: el, baseOpacity: Number(el.getAttribute('opacity') || 1), focusOpacity: 0.88, dimOpacity: 0.15 });
+        });
+        svg.querySelectorAll('.fig-tip-target').forEach(function(el) {
+          var circle = el.querySelector('circle[fill]');
+          var op = circle && FIG_OP_BY_COLOR[(circle.getAttribute('fill') || '').toLowerCase()];
+          if (!op) return;
+          el.dataset.op = op;
+          opTargets.push({ el: el, baseOpacity: 1, focusOpacity: 1, dimOpacity: 0.15 });
+        });
+
+        function syncOpButtons() {
+          var focus = fig.dataset.focus || '';
+          opToggle.querySelectorAll('button[data-op-focus]').forEach(function(btn) {
+            var on = btn.dataset.opFocus === focus;
+            btn.classList.toggle('active', on);
+            btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+          });
+        }
+
+        function applyOpFocus() {
+          var focus = fig.dataset.focus || '';
+          opTargets.forEach(function(entry) {
+            var opacity = !focus ? entry.baseOpacity : (entry.el.dataset.op === focus ? entry.focusOpacity : entry.dimOpacity);
+            entry.el.style.setProperty('opacity', String(opacity), 'important');
+            entry.el.style.filter = focus && entry.el.dataset.op === focus ? 'brightness(1.08)' : '';
+          });
+        }
+
+        opToggle.addEventListener('click', function(ev) {
+          var btn = ev.target.closest('button[data-op-focus]');
+          if (!btn) return;
+          ev.stopPropagation();
+          if (fig.dataset.focus === btn.dataset.opFocus) fig.removeAttribute('data-focus');
+          else fig.dataset.focus = btn.dataset.opFocus;
+          syncOpButtons();
+          applyOpFocus();
+        });
+
+        syncOpButtons();
+        applyOpFocus();
+      }
+    }
+
+    function buildHtml(t) {
+      var h = '';
+      if (t.era)   h += '<div class="tip-era">'   + t.era   + '</div>';
+      if (t.title) h += '<div class="tip-title">' + t.title + '</div>';
+      if (t.body)  h += '<div class="tip-body">'  + t.body  + '</div>';
+      if (t.refs && t.refs.length) {
+        h += '<div class="tip-refs">';
+        for (var i = 0; i < t.refs.length; i++) {
+          var r = t.refs[i];
+          h += '<span class="tip-ref">';
+          if (r.prefix) {
+            h += '<span class="tip-ref-prefix">' + r.prefix + '</span>';
+          }
+          if (r.url) {
+            h += '<a href="' + r.url + '" target="_blank" rel="noopener">'
+               + r.text + ' &rarr;</a>';
+          } else {
+            h += r.text;
+          }
+          h += '</span>';
+        }
+        h += '</div>';
+      }
+      if (t.note) {
+        h += '<div class="tip-note">' + t.note + '</div>';
+      }
+      return h;
+    }
+
+    function showTip(target) {
+      var key = target.getAttribute('data-tip-key');
+      var t = TIPS[key];
+      if (!t) return;
+      tip.innerHTML = buildHtml(t);
+      tip.style.visibility = 'hidden';
+      tip.setAttribute('data-shown', 'true');
+      var tipRect  = tip.getBoundingClientRect();
+      var hostRect = host.getBoundingClientRect();
+      var tgtRect  = target.getBoundingClientRect();
+      // Anchor below the target, centred horizontally; clamp to host bounds.
+      var left = (tgtRect.left + tgtRect.width / 2) - hostRect.left - tipRect.width / 2;
+      var top  = (tgtRect.bottom - hostRect.top) + 12;
+      var fitsBelow = top + tipRect.height <= hostRect.height - 8;
+      var topAbove  = (tgtRect.top - hostRect.top) - tipRect.height - 12;
+      var fitsAbove = topAbove >= 8;
+      // Prefer the side that fits; if neither fits, pick the side with more room
+      // and then clamp vertically so the tip never overflows the host.
+      if (!fitsBelow && fitsAbove) {
+        top = topAbove;
+      } else if (!fitsBelow && !fitsAbove) {
+        var roomAbove = tgtRect.top - hostRect.top;
+        var roomBelow = hostRect.height - (tgtRect.bottom - hostRect.top);
+        if (roomAbove > roomBelow) {
+          top = Math.max(8, topAbove);
+        } else {
+          top = Math.min(hostRect.height - tipRect.height - 8, top);
+        }
+      }
+      // Final vertical clamp (covers all branches).
+      if (top < 8) top = 8;
+      if (top + tipRect.height > hostRect.height - 8) top = hostRect.height - tipRect.height - 8;
+      var maxLeft = hostRect.width - tipRect.width - 8;
+      if (left < 8) left = 8;
+      if (left > maxLeft) left = maxLeft;
+      tip.style.left = left + 'px';
+      tip.style.top  = top  + 'px';
+      tip.style.visibility = 'visible';
+      target.classList.add('is-active');
+      tip._activeTarget = target;
+    }
+    function hideTip() {
+      tip.removeAttribute('data-shown');
+      tip.style.visibility = '';
+      if (tip._activeTarget) tip._activeTarget.classList.remove('is-active');
+      tip._activeTarget = null;
+    }
+
+    fig.querySelectorAll('.fig-tip-target').forEach(function(el){
+      el.addEventListener('mouseenter', function(){ showTip(el); });
+      el.addEventListener('mouseleave', function(){ hideTip(); });
+      el.addEventListener('focus',      function(){ showTip(el); });
+      el.addEventListener('blur',       function(){ hideTip(); });
+      el.addEventListener('click',      function(ev){
+        ev.stopPropagation();
+        if (tip._activeTarget === el) hideTip(); else showTip(el);
+      });
+    });
+    // Tap anywhere else on the figure to dismiss.
+    host.addEventListener('click', function(){ hideTip(); });
+    // Esc key dismisses.
+    document.addEventListener('keydown', function(ev){
+      if (ev.key === 'Escape' && tip._activeTarget) hideTip();
+    });
+  });
+})();
+</script>
+</body>
+</html>
