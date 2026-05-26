@@ -766,31 +766,31 @@ figure.fig-latency-chart svg [data-op]{
     <span class="name">KMeans</span>
   </div>
   <div class="stat" style="--swatch:var(--c-knn)">
-    <span class="num">16<span class="x">&times;</span></span>
+    <span class="num">19<span class="x">&times;</span></span>
     <span class="name">KNN</span>
   </div>
   <div class="stat" style="--swatch:var(--c-tsvd)">
-    <span class="num">88<span class="x">&times;</span></span>
+    <span class="num">208<span class="x">&times;</span></span>
     <span class="name">TruncatedSVD</span>
   </div>
   <div class="stat" style="--swatch:var(--c-pca)">
-    <span class="num">138<span class="x">&times;</span></span>
+    <span class="num">47<span class="x">&times;</span></span>
     <span class="name">PCA</span>
   </div>
   <div class="stat" style="--swatch:var(--c-umap)">
-    <span class="num">5<span class="x">&times;</span></span>
+    <span class="num">7<span class="x">&times;</span></span>
     <span class="name">UMAP</span>
   </div>
   <div class="stat" style="--swatch:var(--c-hdbscan)">
-    <span class="num">34<span class="x">&times;</span></span>
+    <span class="num">40<span class="x">&times;</span></span>
     <span class="name">HDBSCAN</span>
   </div>
   <div class="stat" style="--swatch:var(--c-tsne)">
-    <span class="num">145<span class="x">&times;</span></span>
+    <span class="num">147<span class="x">&times;</span></span>
     <span class="name">t-SNE (exact)</span>
   </div>
   <div class="stat" style="--swatch:var(--c-mnb)">
-    <span class="num">90<span class="x">&times;</span></span>
+    <span class="num">49<span class="x">&times;</span></span>
     <span class="name">MultinomialNB</span>
   </div>
 </div>
@@ -798,10 +798,10 @@ figure.fig-latency-chart svg [data-op]{
 <p>Introducing <strong>FlashLib</strong> &mdash; a GPU library for classical machine learning operators on modern hardwares, rebuilt for today's ML workloads and emerging agentic AI systems. Here are a few headline results from the first release:</p>
 
 <ul>
-  <li>Significant wins over cuML on Hopper GPUs: up to <strong>26&times;</strong> on KMeans, <strong>16&times;</strong> on KNN, <strong>34&times;</strong> on HDBSCAN, <strong>88&times;</strong> on TruncatedSVD, <strong>138&times;</strong> on PCA, and <strong>145&times;</strong> on exact t-SNE, <strong>90&times;</strong> on MultinomialNB.</li>
+  <li>Significant wins over cuML on Hopper GPUs: up to <strong>26&times;</strong> on KMeans, <strong>19&times;</strong> on KNN, <strong>40&times;</strong> on HDBSCAN, <strong>208&times;</strong> on TruncatedSVD, <strong>47&times;</strong> on PCA, <strong>147&times;</strong> on exact t-SNE, and <strong>49&times;</strong> on MultinomialNB.</li>
   <li>Flash informative API: Predict runtime, memory footprint, and overhead for any workload in <strong>~5&nbsp;&micro;s on pure CPU</strong>, with no GPU profiling required.</li>
   <li>Fast cold start, built to scale: FlashLib uses heuristic kernel selection to avoid long autotune loops, and already supports multi-GPU execution for large workloads.</li>
-  <li>Toward optimal hardware utilization: FlashLib drives kernels much closer to the limits of modern GPUs, with Flash-KMeans reaching up to <strong>64% of peak FLOPs</strong> and Flash-KNN reaching up to <strong>85.2% of peak HBM bandwidth</strong> on H200.</li>
+  <li>Toward optimal hardware utilization: FlashLib drives kernels much closer to the limits of modern GPUs, with Flash-KMeans reaching up to <strong>61% of peak FLOPs</strong> and Flash-KNN reaching up to <strong>85.2% of peak HBM bandwidth</strong> on H200.</li>
 </ul>
 
 <p>The next frontier of AI efficiency is not just faster LLM inference. It is faster intelligence assembly. For the past few years, MLsys work largely followed a model-centric view of intelligence. As LLMs became stronger through better reasoning, larger-scale test-time compute, and more capable inference, the systems community focused on making the transformer core faster: FlashAttention, FlashDecoding, KV-cache management, and LLM serving systems etc.</p>
@@ -931,22 +931,25 @@ figure.fig-latency-chart svg [data-op]{
 <pre class="codeblock"><code><span class="k">import</span> <span class="mod">flashlib.info</span> <span class="k">as</span> <span class="mod">info</span>   <span class="c"># pure stdlib -- no torch/triton/cutlass.</span>
 
 <span class="c"># Predict cost without touching the GPU -- ~5 microseconds on pure CPU.</span>
-est = <span class="mod">info</span>.<span class="fn">estimate</span>(<span class="str">"pca"</span>, <span class="kw">shape</span>=(<span class="num">1_000_000</span>, <span class="num">512</span>), <span class="kw">params</span>={<span class="str">"K"</span>: <span class="num">32</span>})
+est = <span class="mod">info</span>.<span class="fn">estimate</span>(<span class="str">"pca"</span>, <span class="kw">shape</span>=(<span class="num">1_000_000</span>, <span class="num">512</span>), <span class="kw">params</span>={<span class="str">"K"</span>: <span class="num">32</span>}, <span class="kw">device</span>=<span class="str">"H200"</span>)
 
 <span class="fn">print</span>(est.<span class="fn">summary_line</span>())
-<span class="c"># pca   4.21 ms  bound=memory  398 GB/s  (10% peak)  [calibrated]</span>
+<span class="c"># pca   13.18 ms  bound=compute   42 TF  (83% peak)  res~1e-7  [roofline]</span>
 
 est.<span class="fn">print_tree</span>()              <span class="c"># walk the recursive call-stack tree</span>
-<span class="c"># pca           4.21 ms   3.20 GB   memory    398 GB/s</span>
-<span class="c"># &#9500;&#9472;&#9472; cov_gemm  3.10 ms   2.20 GB   memory    420 GB/s</span>
-<span class="c"># &#9492;&#9472;&#9472; eigh      1.11 ms   0.04 GB   compute    38 TF</span>
+<span class="c"># pca           13.18 ms  2.18 GB  compute   42 TF  res~1e-7</span>
+<span class="c"># &#9500;&#9472;&#9472; cov_gemm  10.49 ms  2.05 GB  compute   50 TF</span>
+<span class="c"># &#9500;&#9472;&#9472; eigh       0.12 ms  0.00 GB  compute    3 TF</span>
+<span class="c"># &#9492;&#9472;&#9472; transform  2.57 ms  2.18 GB  compute   13 TF</span>
 
-<span class="c"># Pareto-optimal GEMM variants at a tol budget:</span>
-<span class="k">for</span> v <span class="k">in</span> <span class="mod">info</span>.<span class="fn">pareto</span>(<span class="str">"gemm"</span>, <span class="kw">shape</span>=(<span class="num">4096</span>, <span class="num">4096</span>, <span class="num">4096</span>), <span class="kw">tol</span>=<span class="num">1e-5</span>):
+<span class="c"># Pareto-optimal GEMM variants for a 4Kx4Kx4K matmul on H200:</span>
+<span class="k">for</span> v <span class="k">in</span> <span class="mod">info</span>.<span class="fn">pareto</span>(<span class="str">"gemm"</span>, <span class="kw">shape</span>=(<span class="num">4096</span>, <span class="num">4096</span>, <span class="num">4096</span>), <span class="kw">device</span>=<span class="str">"H200"</span>):
     <span class="fn">print</span>(v)
-<span class="c"># Variant('3xbf16'      :   0.7 ms  residual~3e-5)</span>
-<span class="c"># Variant('ozaki2_cute' :   1.7 ms  residual~3e-7)</span>
-<span class="c"># Variant('ozaki2_int8' :   4.0 ms  residual~1e-15)</span></code></pre>
+<span class="c"># Variant('gemm_fp16'           : 0.2 ms  residual~8e-04)</span>
+<span class="c"># Variant('gemm_tf32'           : 0.4 ms  residual~3e-04)</span>
+<span class="c"># Variant('gemm_3xfp16'         : 0.5 ms  residual~2e-04)</span>
+<span class="c"># Variant('gemm_fp16_x3_kahan'  : 0.6 ms  residual~5e-07)</span>
+<span class="c"># Variant('gemm_ozaki2_cute'    : 0.8 ms  residual~2e-15)</span></code></pre>
 
 <h2>Benchmarks</h2>
 
@@ -954,7 +957,7 @@ est.<span class="fn">print_tree</span>()              <span class="c"># walk the
 
 <h3>1. Breadth: speedup over cuML across 13 primitives</h3>
 
-<p>The first benchmark is a broad sweep: 13 primitives &times; 198 (shape, dtype, hyperparameter) cells, all run against <code>cuml&nbsp;25.10</code> with matched algorithms on the same H200. The bar chart below collapses each primitive's 12&ndash;40 cells into a single bar &mdash; <strong>Geomean</strong> shows the geometric-mean speedup across all of that primitive's cells, and <strong>Max</strong> shows the per-primitive ceiling on the most favourable cell. FlashLib is at least as fast as cuML on <strong>197 / 198</strong> cells; <strong>126</strong> cells cross 5&times;, and <strong>12</strong> cross 50&times;.</p>
+<p>The first benchmark is a broad sweep: 13 primitives &times; 194 (shape, dtype, hyperparameter) cells, all run against <code>cuml&nbsp;25.10</code> on the same H200. <strong>Every cell here is an apples-to-apples comparison: matched algorithm, matched precision, matched hyperparameters &mdash; FlashLib is forbidden from using any reduced-precision GEMM (no bf16/fp16/Ozaki) or algorithmic shortcut (no Halko, no FFT t-SNE, no NN-Descent KNN).</strong> Because of this, the bars below are strictly <em>lower</em> than the headline numbers at the top of the post: the hero stats are FlashLib's best ceiling speedups on each primitive (which, where applicable, do let the user trade precision or algorithmic exactness for throughput via the <code>tol</code> knob from Principle&nbsp;03), whereas the broad sweep deliberately removes those degrees of freedom to isolate the pure kernel-engineering win. The bar chart below collapses each primitive's 8&ndash;34 cells into a single bar &mdash; <strong>Geomean</strong> shows the geometric-mean speedup across all of that primitive's cells, and <strong>Max</strong> shows the per-primitive ceiling on the most favourable cell. FlashLib is at least as fast as cuML on <strong>193 / 194</strong> cells; <strong>126</strong> cells cross 5&times;, and <strong>11</strong> cross 50&times;.</p>
 
 <!-- ───── Chart 1: per-primitive speedup with geomean/max toggle ───── -->
 <div class="chart speedup-chart" data-view="geomean">
@@ -962,8 +965,8 @@ est.<span class="fn">print_tree</span>()              <span class="c"># walk the
     <div>
       <div class="chart-title">Speedup over cuML 25.10, per primitive</div>
       <div class="chart-sub">
-        <span class="show-geomean">Geometric mean across 198 workload cells &middot; log-scale x-axis.</span>
-        <span class="show-max">Maximum win across the same 198 cells &middot; log-scale x-axis.</span>
+        <span class="show-geomean">Geometric mean across 194 workload cells, exact-to-exact (no reduced precision, no algorithmic shortcut) &middot; log-scale x-axis.</span>
+        <span class="show-max">Maximum win across the same 194 cells, exact-to-exact &middot; log-scale x-axis.</span>
       </div>
     </div>
     <div class="chart-actions">
@@ -1513,16 +1516,15 @@ est = <span class="mod">info</span>.<span class="fn">estimate</span>(<span class
 
 <h2>Citation</h2>
 
-<p>If you find FlashLib useful in your research or work, please cite this blog post:</p>
+<p>If FlashLib is useful in your research or product, please cite the project as:</p>
 
 <pre class="codeblock"><code>@misc{yang2026flashlib,
-  title        = {FlashLib: Bringing Flash Magic to Classical Machine Learning Operators},
-  author       = {Yang, Shuo and Xi, Haocheng and Zhao, Yilong and Mang, Qiuyang and
-                  Wang, Zhe and Sun, Shanlin and Keutzer, Kurt and Gonzalez, Joseph E. and
-                  Han, Song and Xu, Chenfeng and Stoica, Ion},
-  year         = {2026},
-  howpublished = {\url{https://flashml-org.github.io/}},
-  note         = {Blog post}
+  title  = {FlashLib: Bringing Flash Magic to Classical Machine Learning Operators},
+  author = {Yang, Shuo and Xi, Haocheng and Zhao, Yilong and Mang, Qiuyang and
+            Wang, Zhe and Sun, Shanlin and Keutzer, Kurt and Gonzalez, Joseph E. and
+            Han, Song and Xu, Chenfeng and Stoica, Ion},
+  year   = {2026},
+  url    = {https://flashml-org.github.io/},
 }</code></pre>
 
 </article>
